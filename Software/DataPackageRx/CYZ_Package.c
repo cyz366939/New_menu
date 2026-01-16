@@ -6,7 +6,7 @@
  * 描    述：特定格式数据包接收器实现文件，包头包尾为<CYZ:XXX:CYZ>
  */
 // ================== 静态全局变量 ==================
-static char cyz_buffer[CYZ_BUFFER_SIZE];
+static char cyz_buffer[CYZ_BUFFER_SIZE]= {0};
 static uint16_t cyz_index = 0;
 static CYZ_State_t cyz_state = CYZ_IDLE;
 static CYZ_Callback_t cyz_callback = NULL;
@@ -274,41 +274,6 @@ void CYZ_Receiver_Reset(void)
 // 特定数据包接收处理回调函数
 void cyz_data_handler(const char *data)
 {
-    if (data == NULL)
-    {
-        return;
-    }
-    // 数据上传命令
-    if (strcmp(data, "Upload_on") == 0)
-    {
-        ESP8266_UploadDataPoints(&g_statistics); // 上传数据点
-        OLED_Clear();
-        OLED_ShowString(0, 24, "Upload success", OLED_8X16);
-        OLED_Update();
-        // USART1_Printf("Processing Upload_Data request...\r\n");
-    }
-    else if (strcmp(data, "PC13_on") == 0)
-    {
-        GPIO_SetBits(GPIOC, GPIO_Pin_13); // 点亮LED
-        OLED_Clear();
-        OLED_ShowString(0, 24, "PC13_on success", OLED_8X16);
-        OLED_Update();
-        // USART1_Printf("Processing PC13_on request...\r\n");
-    }
-    else if (strcmp(data, "PC13_off") == 0)
-    {
-        GPIO_ResetBits(GPIOC, GPIO_Pin_13); // 熄灭LED
-        OLED_Clear();
-        OLED_ShowString(0, 24, "PC13_off success", OLED_8X16);
-        OLED_Update();
-        // USART1_Printf("Processing PC13_off request...\r\n");
-    }
-    else
-    {
-        // USART1_Printf("Unknown command: %s\r\n", data);
-        OLED_Clear();
-        OLED_ShowString(0, 24, "unknown command", OLED_8X16);
-        OLED_Update();
-    }
-    CYZ_Receiver_Reset(); // 重置接收器状态,清除接收缓冲区
+    ESP8266Cmd_Process(data); // 调用ESP8266命令处理函数
+    CYZ_Receiver_Reset();     // 重置接收器状态,清除接收缓冲区
 }

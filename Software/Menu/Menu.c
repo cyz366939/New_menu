@@ -50,7 +50,7 @@ void Menu_Init(MenuItem_t *root_menu)
 MenuItem_t* Menu_CreateItem(char *name, MenuItemType_t type)
 {
     static MenuItem_t items[50];  // 静态分配菜单项数组（可根据需要调整大小）
-    static uint8_t item_index = 0;
+    static uint8_t item_index = 0; // 菜单项索引
     
     if(item_index >= 50) return NULL;
     
@@ -176,27 +176,27 @@ static uint8_t Menu_GetItemIndex(MenuItem_t *item)
  * 参    数：无
  * 返 回 值：无
  */
-static void Menu_MoveUp(void)
+void Menu_MoveUp(void)
 {
     if(MenuCtrl.current_item->prev != NULL)
     {
         MenuCtrl.current_item = MenuCtrl.current_item->prev;
-        
+
         // 计算当前项在菜单中的索引
         uint8_t item_index = Menu_GetItemIndex(MenuCtrl.current_item);
-        
+
         // 如果当前项在显示区域上方，需要向上滚动
         if(item_index < MenuCtrl.scroll_offset)
         {
             MenuCtrl.scroll_offset = item_index;
         }
-        
+
         // 计算光标位置（当前项在显示区域内的位置，注意第一行是状态栏）
         if(item_index >= MenuCtrl.scroll_offset)
         {
             MenuCtrl.cursor_pos = item_index - MenuCtrl.scroll_offset;
         }
-        
+
         MenuCtrl.need_refresh = 1;
     }
 }
@@ -206,27 +206,27 @@ static void Menu_MoveUp(void)
  * 参    数：无
  * 返 回 值：无
  */
-static void Menu_MoveDown(void)
+void Menu_MoveDown(void)
 {
     if(MenuCtrl.current_item->next != NULL)
     {
         MenuCtrl.current_item = MenuCtrl.current_item->next;
-        
+
         // 计算当前项在菜单中的索引
         uint8_t item_index = Menu_GetItemIndex(MenuCtrl.current_item);
-        
+
         // 如果当前项在显示区域下方，需要向下滚动（菜单项最多显示MENU_MAX_ITEM_LINES行）
         if(item_index >= MenuCtrl.scroll_offset + MENU_MAX_ITEM_LINES)
         {
             MenuCtrl.scroll_offset = item_index - MENU_MAX_ITEM_LINES + 1;
         }
-        
+
         // 计算光标位置（当前项在显示区域内的位置，注意第一行是状态栏）
         if(item_index >= MenuCtrl.scroll_offset)
         {
             MenuCtrl.cursor_pos = item_index - MenuCtrl.scroll_offset;
         }
-        
+
         MenuCtrl.need_refresh = 1;
     }
 }
@@ -236,7 +236,7 @@ static void Menu_MoveDown(void)
  * 参    数：无
  * 返 回 值：无
  */
-static void Menu_Enter(void)
+void Menu_Enter(void)
 {
     MenuItem_t *item = MenuCtrl.current_item;
     
@@ -292,7 +292,7 @@ static void Menu_Enter(void)
  * 参    数：无
  * 返 回 值：无
  */
-static void Menu_Back(void)
+void Menu_Back(void)
 {
     if(MenuCtrl.current_menu->parent != NULL)
     {
@@ -313,32 +313,53 @@ static void Menu_Back(void)
 }
 
 /**
- * 函    数：处理按键输入
+ * 函    数：处理按键输入（支持长按连续翻动）
  * 参    数：key - 按键值
  * 返 回 值：无
  */
-void Menu_Process(uint8_t key)
+void Menu_Process(Key_action Key_action_t)
 {
-    switch(key)
+    // 检查短按事件
+    Key_action press_event = Key_Get_Press_Event();
+    // 检查重复按键事件（长按连续触发）
+    Key_action repeat_event = Key_Get_Repeat_Event();
+
+    // 优先处理重复事件（长按连续翻动）
+    if(repeat_event != key_none)
     {
-        case KEY_UP:
-            Menu_MoveUp();
-            break;
-            
-        case KEY_DOWN:
-            Menu_MoveDown();
-            break;
-            
-        case KEY_OK:
-            Menu_Enter();
-            break;
-            
-        case KEY_BACK:
-            Menu_Back();
-            break;
-            
-        default:
-            break;
+        switch(repeat_event)
+        {
+            case key_up:
+                Menu_MoveUp();
+                break;
+            case key_down:
+                Menu_MoveDown();
+                break;
+            default:
+                break;
+        }
+    }
+
+    // 处理短按事件
+    if(press_event != key_none)
+    {
+        switch(press_event)
+        {
+            case key_up:
+                Menu_MoveUp();
+                break;
+            case key_down:
+                Menu_MoveDown();
+                break;
+            case key_enter:
+                Menu_Enter();
+                break;
+            case key_back:
+                Menu_Back();
+                break;
+            default:
+                break;
+        }
     }
 }
 

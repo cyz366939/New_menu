@@ -2,6 +2,11 @@
 #include "Sensor.h"
 #include <math.h>
 
+/*全局阈值变量定义*/
+uint8_t g_front_chip_threshold = FRONT_CHIP_THRESHOLD_DEFAULT;    // 前导芯片阈值
+uint8_t g_middle_loss_max = MIDDLE_LOSS_MAX_DEFAULT;              // 中间缺失最大计数  
+uint8_t g_trail_empty_threshold = TRAIL_EMPTY_THRESHOLD_DEFAULT;   // 后导空阈值
+
 /*统计数据*/
 StatisticsData_t  g_statistics;//统计数据结构体变量
 
@@ -28,7 +33,7 @@ void Statistics_Init(void)
  */
 void Statistics_ProcessChip(uint8_t chip_present)
 {
-    if(g_statistics.is_paused==0)//如果标记为停止，则暂停统计
+    if(g_statistics.is_beginning==0)//如果标记为停止，则暂停统计
     {
         return;
     }
@@ -45,84 +50,84 @@ void Statistics_ProcessChip(uint8_t chip_present)
     // }
     
     /*根据当前阶段进行详细统计*/
-switch(g_statistics.current_stage)
-{
-    case TAPE_STAGE_LEAD_EMPTY:
-        /*前导空阶段*/
-        if(chip_present == CHIP_ABSENT)  //不存在芯片
-        {
-            g_statistics.lead_empty_count++;  //前导空计数
-            
-            // 处理被空位中断的芯片序列
-            if(g_statistics.chip_sequence_count > 0)
+    switch(g_statistics.current_stage)
+    {
+        case TAPE_STAGE_LEAD_EMPTY:
+            /*前导空阶段*/
+            if(chip_present == CHIP_ABSENT)  //不存在芯片
             {
-                // 序列被中断，这些芯片数量肯定小于等于阈值（否则早就转状态了）
-                g_statistics.F_T_ADD += g_statistics.chip_sequence_count;  //算作无效芯片
-                g_statistics.chip_sequence_count = 0;  //重置
-            }
-        }
-        else if(chip_present == CHIP_PRESENT)  //存在芯片
-        {
-            // 增加当前连续芯片计数
-            g_statistics.chip_sequence_count++;
-            
-            // 检查：当前连续芯片数是否已经超过阈值？
-            // 注意：是检查当前值是否大于阈值，而不是累加到超过阈值
-            if(g_statistics.chip_sequence_count > FRONT_CHIP_THRESHOLD)
-            {
-                // 当前这连续出现的芯片数大于阈值
-                // 把这些芯片全部算作中间芯片数
-                g_statistics.middle_chip_count = g_statistics.chip_sequence_count;
-                g_statistics.chip_sequence_count = 0;  //重置
-                g_statistics.current_stage = TAPE_STAGE_MIDDLE;  //进入芯片检测阶段
-            }
-        }
-        break;                                                                                                                                                          
-            
-        case TAPE_STAGE_MIDDLE:
-            /*中间芯片阶段*/
-            if(chip_present == CHIP_PRESENT)
-            {
-                /*中间阶段的正常芯片*/
-                g_statistics.middle_chip_count++;
-                g_statistics.empty_sequence_count = 0;  // 重置连续空计数
-            }
-            else
-            {
-                /*中间阶段缺失芯片*/
-                g_statistics.empty_sequence_count++;
-                g_statistics.Middle_LOSS++;
-                if(g_statistics.empty_sequence_count == MIDDLE_LOSS_MAX + 1)
+                g_statistics.lead_empty_count++;  //前导空计数
+                
+                // 处理被空位中断的芯片序列
+                if(g_statistics.chip_sequence_count > 0)
                 {
-                    /*连续缺失达到3个，认为进入后导空阶段*/
-                    g_statistics.current_stage = TAPE_STAGE_TRAIL_EMPTY;
-                    /*调整统计：第3个转为后导空*/
-                    g_statistics.Middle_LOSS=g_statistics.Middle_LOSS-(MIDDLE_LOSS_MAX + 1);  // 第3个不算中间缺失
-                    g_statistics.trail_empty_count =(MIDDLE_LOSS_MAX + 1);  //连续空的三个算到尾空
-                    g_statistics.empty_sequence_count =0;    // 后导空连续计数从0开始
+                    // 序列被中断，这些芯片数量肯定小于等于阈值（否则早就转状态了）
+                    g_statistics.F_T_ADD += g_statistics.chip_sequence_count;  //算作无效芯片
+                    g_statistics.chip_sequence_count = 0;  //重置
                 }
-                /*注意：连续缺失超过3个时，下次检测会进入TAPE_STAGE_TRAIL_EMPTY分支处理*/
             }
-            break;
-            
-        case TAPE_STAGE_TRAIL_EMPTY:
-            /*后导空阶段*/
-            if(chip_present == CHIP_PRESENT)
+            else if(chip_present == CHIP_PRESENT)  //存在芯片
             {
-                g_statistics.F_T_ADD++;  // 统计到F_T_ADD（报警统计，不清除）
-                /*触发多余芯片报警*/
-                Statistics_OnExtraChipDetected();
-                /*不回到中间阶段，继续后导空检测*/
-                g_statistics.empty_sequence_count = 0;  // 重置连续空计数
+                // 增加当前连续芯片计数
+                g_statistics.chip_sequence_count++;
+                
+                // 检查：当前连续芯片数是否已经超过阈值？
+                // 注意：是检查当前值是否大于阈值，而不是累加到超过阈值
+                if(g_statistics.chip_sequence_count > g_front_chip_threshold)
+                {
+                    // 当前这连续出现的芯片数大于阈值
+                    // 把这些芯片全部算作中间芯片数
+                    g_statistics.middle_chip_count = g_statistics.chip_sequence_count;
+                    g_statistics.chip_sequence_count = 0;  //重置
+                    g_statistics.current_stage = TAPE_STAGE_MIDDLE;  //进入芯片检测阶段
+                }
             }
-            else
-            {
-                /*后导空阶段的空坑位*/
-                g_statistics.trail_empty_count++;
-                g_statistics.empty_sequence_count++;
-            }
-            break;
-    }
+            break;                                                                                                                                                          
+                
+            case TAPE_STAGE_MIDDLE:
+                /*中间芯片阶段*/
+                if(chip_present == CHIP_PRESENT)
+                {
+                    /*中间阶段的正常芯片*/
+                    g_statistics.middle_chip_count++;
+                    g_statistics.empty_sequence_count = 0;  // 重置连续空计数
+                }
+                else
+                {
+                    /*中间阶段缺失芯片*/
+                    g_statistics.empty_sequence_count++;
+                    g_statistics.Middle_LOSS++;
+                    if(g_statistics.empty_sequence_count == g_middle_loss_max + 1)
+                    {
+                        /*连续缺失达到3个，认为进入后导空阶段*/
+                        g_statistics.current_stage = TAPE_STAGE_TRAIL_EMPTY;
+                        /*调整统计：第3个转为后导空*/
+                        g_statistics.Middle_LOSS=g_statistics.Middle_LOSS-(g_middle_loss_max + 1);  // 第3个不算中间缺失
+                        g_statistics.trail_empty_count =(g_middle_loss_max + 1);  //连续空的三个算到尾空
+                        g_statistics.empty_sequence_count =0;    // 后导空连续计数从0开始
+                    }
+                    /*注意：连续缺失超过3个时，下次检测会进入TAPE_STAGE_TRAIL_EMPTY分支处理*/
+                }
+                break;
+                
+            case TAPE_STAGE_TRAIL_EMPTY:
+                /*后导空阶段*/
+                if(chip_present == CHIP_PRESENT)
+                {
+                    g_statistics.F_T_ADD++;  // 统计到F_T_ADD（报警统计，不清除）
+                    /*触发多余芯片报警*/
+                    Statistics_OnExtraChipDetected();
+                    /*不回到中间阶段，继续后导空检测*/
+                    g_statistics.empty_sequence_count = 0;  // 重置连续空计数
+                }
+                else
+                {
+                    /*后导空阶段的空坑位*/
+                    g_statistics.trail_empty_count++;
+                    g_statistics.empty_sequence_count++;
+                }
+                break;
+        }
     
     /*计算良品率（基于中间阶段的芯片数）*/
     Statistics_CalculateYield();
@@ -158,8 +163,8 @@ void Statistics_Reset(void)
     /*状态信息*/
     g_statistics.current_stage = TAPE_STAGE_LEAD_EMPTY;
     g_statistics.empty_sequence_count = 0;
-    //g_statistics.first_chip_detected = 0;
-    g_statistics.is_paused = 0;
+    g_statistics.force_update_display = 0;
+    g_statistics.is_beginning = 0;
     g_statistics.data_valid = 0;
 }
 
@@ -219,7 +224,7 @@ TapeStage_t Statistics_GetCurrentStage(void)
  */
 uint8_t Statistics_IsPaused(void)
 {
-    return g_statistics.is_paused;
+    return g_statistics.is_beginning;
 }
 
 /**
@@ -229,7 +234,7 @@ uint8_t Statistics_IsPaused(void)
  */
 void Statistics_Resume(void)
 {
-    g_statistics.is_paused = 1;
+    g_statistics.is_beginning = 1;
 }
 /**
  * 函    数：暂停计数 
@@ -238,6 +243,6 @@ void Statistics_Resume(void)
  */
 void Statistics_Pause(void)
 {
-    g_statistics.is_paused = 0;
+    g_statistics.is_beginning = 0;
 }
 

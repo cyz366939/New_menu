@@ -12,10 +12,15 @@ typedef enum
     TAPE_STAGE_TRAIL_EMPTY     // 后导空阶段
 } TapeStage_t;
 
-/*判断阈值（连续空坑位数量）*/
-#define TRAIL_EMPTY_THRESHOLD  3   // 默认值：连续3个空坑位认为进入后导空
-#define FRONT_CHIP_THRESHOLD   3   // 默认值：连续3个芯片认为进入中间芯片阶段
-#define MIDDLE_LOSS_MAX        2   // 中间缺失最大计数（超过此值不报警，转为后导空）
+/*判断阈值（连续空坑位数量）- 默认值*/
+#define TRAIL_EMPTY_THRESHOLD_DEFAULT  3   // 默认值：连续3个空坑位认为进入后导空
+#define FRONT_CHIP_THRESHOLD_DEFAULT   3   // 默认值：连续3个芯片认为进入中间芯片阶段
+#define MIDDLE_LOSS_MAX_DEFAULT        2   // 默认值：连续缺失中间缺失最大计数（超过此值不报警，转为后导空）
+
+/*全局阈值变量 - 可在运行时修改*/
+extern uint8_t g_front_chip_threshold;    // 前导芯片阈值
+extern uint8_t g_middle_loss_max;         // 中间缺失最大计数
+extern uint8_t g_trail_empty_threshold;   // 后导空阈值
 
 /*统计数据结构*/
 typedef struct
@@ -40,9 +45,9 @@ typedef struct
     TapeStage_t current_stage;      // 当前载带阶段
     uint32_t empty_sequence_count;  // 连续空坑位计数
     uint32_t chip_sequence_count;   // 连续芯片坑位计数
-    //uint8_t first_chip_detected;   // 是否已检测到第一个芯片
+    uint8_t force_update_display;   // 强制更新显示标志
     uint8_t data_valid;            // 数据有效标志
-    uint8_t is_paused;             // 是否开始标志（1：开始-0：暂停）
+    uint8_t is_beginning;           // 是否开始标志（1：开始-0：暂停）
 } StatisticsData_t;
 
 /*函数声明*/

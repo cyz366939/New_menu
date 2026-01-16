@@ -5,7 +5,7 @@
 #include "Sensor.h"
 #include "Statistics.h"
 #include "OLED.h"
-#include "KEY.h"
+#include "Key_multi.h"
 #include "Delay.h"
 #include "Menu.h"
 #include "Buzzer.h"
@@ -14,7 +14,7 @@
 #include "usart1.h"
 #include "Timestamp.h"
 #include "ADC.h"
-
+#include "DHT11.h"
 
 /*game相关引用*/
 #include "GAME_DINO_JUMP.h"
@@ -32,7 +32,7 @@ void Func_ResetCounters(void);         // 计数清零
 void Func_ThresholdSettings(void);     // 阈值设置
 void Func_SetTime(void);               // 时间设置
 void Func_Dinosaur_jump_Game(void);   // 小恐龙跳跃游戏
-void Func_Esp8266(void);            // ESP8266
+void Func_Updata_Esp8266(void);            // ESP8266
 void Func_ADC_Test(void);               // ADC测试
 void Func_Read_Temp(void);             // 读取内部温度传感器
 void Func_About(void);                 // 关于系统

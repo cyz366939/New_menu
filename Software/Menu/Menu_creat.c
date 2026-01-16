@@ -39,14 +39,14 @@ void Menu_Setup(void)
         {"2.View_Data", MENU_TYPE_NORMAL, 1, NULL, NULL, 0, 0, NULL},                // 数据查看
         {"3.Settings", MENU_TYPE_NORMAL, 1, NULL, NULL, 0, 0, NULL},                 // 系统设置
         {"4.Game", MENU_TYPE_NORMAL, 1, NULL, NULL, 0, 0, NULL},                     // 游戏
-        {"5.Upload_Data", MENU_TYPE_FUNC, 1, Func_Esp8266, NULL, 0, 0, NULL},
-        {"6.Wave_display", MENU_TYPE_FUNC, 1, Func_ADC_Test, NULL, 0, 0, NULL},
-        {"7.Chip_Temp", MENU_TYPE_FUNC, 1, Func_Read_Temp, NULL, 0, 0, NULL},
+        {"5.Upload_Data", MENU_TYPE_FUNC, 1, Func_Updata_Esp8266, NULL, 0, 0, NULL},
+        {"6.ADC_display", MENU_TYPE_FUNC, 1, Func_ADC_Test, NULL, 0, 0, NULL},
+        {"7.DHT11_Read", MENU_TYPE_FUNC, 1, Func_Read_Temp, NULL, 0, 0, NULL},
         {"8.About", MENU_TYPE_FUNC, 1, Func_About, NULL, 0, 0, NULL}, // 关于系统
 
         // ID=6-7: View Data子菜单（父菜单ID=2）
         {"Last_Result", MENU_TYPE_FUNC, 3, Func_LastResult, NULL, 0, 0, NULL}, // 查看最近结果
-        {"History", MENU_TYPE_FUNC, 3, Func_ViewHistory, NULL, 0, 0, NULL},    // 查看历史
+        {"History", MENU_TYPE_FUNC, 3, Func_ViewHistory, NULL, 0, 0, NULL},    // 查看历史 (待FlashStorage模块实现后启用)
 
         // ID=8-11: Settings子菜单（父菜单ID=3）
         {"Calibration", MENU_TYPE_FUNC, 4, Func_SensorCalibration, NULL, 0, 0, NULL}, // 传感器校准

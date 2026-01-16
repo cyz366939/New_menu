@@ -10,7 +10,7 @@
 // static uint8_t  g_live_counting_active = 0;
 /*实时统计显示页面*/
 // static uint8_t  g_live_display_page = 0;
-
+extern bool CYZ_Receiver_Process(void); // CYZ数据包接收处理函数
 /**
  * 函    数：显示实时统计界面
  * 参    数：无
@@ -21,7 +21,7 @@ void LiveCounting_Display(void)
 {
     StatisticsData_t *data = Statistics_GetData();
     char str[32];
-    const char *stage_name[] = {"Lead", "Chips", "Trail"};
+    const char *stage_name[] = {"Lead", "Chips", "Tail"};
 
     OLED_Clear();
 
@@ -64,23 +64,29 @@ void Func_LiveCounting(void)
     Statistics_Resume(); // 统计开始
     while (1)
     {
-
-        if (KEY_GetState(KEY_BACK) == KEY_PRESSED)
+        // 在子函数的循环中也需要调用按键状态处理
+        Key_Status_Process();
+        if (Key_Get_Press_Event() == key_back)
         {
             // 停止计数并返回主菜单
             // Sensor_EnableCounting(0);
             Statistics_Pause(); // 暂停统计
             Menu_Refresh();
             break;
-            ;
         }
 
-        if (g_statistics.is_paused == 1)
+        if (g_statistics.is_beginning == 1)
         {
             // 显示实时统计界面
             LiveCounting_Display();
         }
-        // Delay_ms(50);  // 刷新间隔50ms
+        if (g_statistics.force_update_display) // 强制刷新显示
+        {
+            g_statistics.force_update_display = 0;
+            break; // 强制刷新后退出循环
+        }
+        CYZ_Receiver_Process(); // 处理接收到的特定数据包
+        Delay_ms(1);            // 刷新间隔1ms，同时为按键状态处理提供调用周期
     }
 }
 
@@ -130,8 +136,10 @@ void Func_LastResult(void)
     }
 
     // 等待返回键
-    while (KEY_Scan() != KEY_BACK)
+    while (Key_Get_Press_Event() != key_back)
     {
+        Key_Status_Process();
+        CYZ_Receiver_Process(); // 处理接收到的特定数据包
         Delay_ms(1);
     }
 
@@ -152,9 +160,11 @@ void Func_ViewHistory(void)
     OLED_Update();
 
     // 等待返回键
-    while (KEY_Scan() != KEY_BACK)
+    while (Key_Get_Press_Event() != key_back)
     {
-        Delay_ms(10);
+        Key_Status_Process();
+        CYZ_Receiver_Process(); // 处理接收到的特定数据包
+        Delay_ms(1);
     }
 
     Menu_Refresh(); // 强制刷新菜单
@@ -171,13 +181,15 @@ void Func_SensorCalibration(void)
 
     while (1)
     {
-        uint8_t key = KEY_Scan();
+        Key_Status_Process();                   // 调用按键状态处理
+        Key_action key = Key_Get_Press_Event(); // 获取按键事件
 
-        if (key == KEY_BACK)
+        CYZ_Receiver_Process(); // 处理接收到的特定数据包
+
+        if (key == key_back) // 返回键
         {
             Menu_Refresh();
             break;
-            ;
         }
 
         // 显示传感器实时状态
@@ -213,12 +225,12 @@ void Func_ResetCounters(void)
     OLED_Clear();
     OLED_ShowString(12, 24, "Data Reset...", OLED_8X16);
     OLED_Update();
-    Delay_ms(800);
+    Delay_ms(500);
     OLED_Clear();
     OLED_Update();
     OLED_ShowString(8, 24, "Reset success!", OLED_8X16);
     OLED_Update();
-    Delay_ms(800);
+    Delay_ms(500);
     Menu_Refresh();
 }
 
@@ -226,23 +238,221 @@ void Func_ResetCounters(void)
  * 函    数：阈值设置
  * 参    数：无
  * 返 回 值：无
+ * 说    明：动态调整统计阈值参数
  */
 void Func_ThresholdSettings(void)
 {
-    OLED_Clear();
-    OLED_ShowString(0, 0, "Threshold", OLED_8X16);
-    OLED_ShowString(0, 16, "Settings", OLED_8X16);
-    OLED_ShowString(0, 32, "Not Implemented", OLED_8X16);
-    OLED_ShowString(0, 48, "Press BACK", OLED_8X16);
-    OLED_Update();
+    uint8_t menu_index = 0; // 菜单选项索引
+    uint8_t edit_mode = 0;  // 编辑模式标志
+    uint32_t temp_value;    // 临时存储编辑的值
 
-    // 等待返回键
-    while (KEY_Scan() != KEY_BACK)
+    char menu_items[4][16] = {
+        "1.FrontTh:3",
+        "2.MidLoss:2",
+        "3.TrailTh:3",
+        "BACK"};
+#define MENU_ITEMS_COUNT (sizeof(menu_items) / sizeof(menu_items[0]))
+
+    while (1)
     {
-        Delay_ms(10);
-    }
+        Key_Status_Process();
+        Key_action key = Key_Get_Press_Event();
 
-    Menu_Refresh();
+        CYZ_Receiver_Process();
+
+        // 显示菜单
+        OLED_Clear();
+        OLED_ShowString(0, 0, "Threshold Settings", OLED_6X8);
+
+        if (edit_mode)
+        {
+            // 编辑模式：左侧显示菜单列表，右侧放大显示当前编辑值
+            // 显示菜单项（左侧）
+            for (uint8_t i = 0; i < MENU_ITEMS_COUNT; i++)
+            {
+                uint8_t y_pos = 12 + (i * 10);
+                if (i == menu_index)
+                {
+                    OLED_ShowString(0, y_pos, ">", OLED_6X8);
+                }
+                else
+                {
+                    OLED_ShowString(0, y_pos, " ", OLED_6X8);
+                }
+
+                // 显示菜单项文本（简化显示，留出空间给右侧大数值）
+                char simple_text[12];
+                if (i < 3)
+                {
+                    sprintf(simple_text, "%d.%s", i + 1, (i == 0 ? "FTh" : (i == 1 ? "MLoss" : "TTh")));
+                }
+                else
+                {
+                    sprintf(simple_text, "BACK");
+                }
+                OLED_ShowString(8, y_pos, simple_text, OLED_6X8);
+            }
+
+            // 右侧显示放大的当前编辑值
+            char param_name[16];
+            if (menu_index == 0)
+                sprintf(param_name, "FrontTh");
+            else if (menu_index == 1)
+                sprintf(param_name, "MidLoss");
+            else
+                sprintf(param_name, "TrailTh");
+
+            // 参数名（上方）
+            OLED_ShowString(64, 8, param_name, OLED_6X8);
+
+            // 大字号显示数值（中间）
+            char big_value[4];
+            sprintf(big_value, "%d", temp_value);
+            // 使用8x16字体显示大数值
+            OLED_ShowString(72, 18, big_value, OLED_8X16);
+
+            // 单位说明（下方）
+            OLED_ShowString(64, 36, "Threshold", OLED_6X8);
+
+            // 操作提示（底部）
+            OLED_ShowString(0, 52, "UP/DOWN:Change  OK:Save  BACK:Cancel", OLED_6X8);
+        }
+        else
+        {
+            // 普通选择模式：紧凑显示所有菜单项
+            for (uint8_t i = 0; i < MENU_ITEMS_COUNT; i++)
+            {
+                uint8_t y_pos = 16 + (i * 12);
+                if (i == menu_index)
+                {
+                    OLED_ShowString(0, y_pos, ">", OLED_6X8);
+                }
+                else
+                {
+                    OLED_ShowString(0, y_pos, " ", OLED_6X8);
+                }
+                OLED_ShowString(8, y_pos, menu_items[i], OLED_6X8);
+            }
+
+            // 操作提示
+            OLED_ShowString(0, 52, "OK:Edit  BACK:Exit", OLED_6X8);
+        }
+        OLED_Update();
+
+        // 更新菜单显示文本以反映最新值（除了BACK项）
+        if (!edit_mode)
+        {
+            sprintf((char *)menu_items[0], "1.FrontTh:%d", g_front_chip_threshold);
+            sprintf((char *)menu_items[1], "2.MidLoss:%d", g_middle_loss_max);
+            sprintf((char *)menu_items[2], "3.TrailTh:%d", g_trail_empty_threshold);
+        }
+        else
+        {
+            // 编辑模式下，菜单项只显示参数名，数值在右侧大区域显示
+            sprintf((char *)menu_items[0], "1.FTh");
+            sprintf((char *)menu_items[1], "2.MLoss");
+            sprintf((char *)menu_items[2], "3.TTh");
+        }
+
+        // 按键处理
+        if (key == key_up)
+        {
+            if (edit_mode)
+            {
+                // 编辑模式：增加数值
+                if (temp_value < 99)
+                    temp_value++;
+            }
+            else
+            {
+                // 选择模式：向上移动菜单项
+                menu_index = (menu_index > 0) ? (menu_index - 1) : (MENU_ITEMS_COUNT - 1);
+                Delay_ms(20);
+            }
+        }
+        else if (key == key_down)
+        {
+            if (edit_mode)
+            {
+                // 编辑模式：减少数值
+                if (temp_value > 0)
+                    temp_value--;
+            }
+            else
+            {
+                // 选择模式：向下移动菜单项
+                menu_index = (menu_index + 1) % MENU_ITEMS_COUNT;
+                Delay_ms(20);
+            }
+        }
+        else if (key == key_enter)
+        {
+            if (edit_mode)
+            {
+                // 保存编辑的值
+                switch (menu_index)
+                {
+                case 0:
+                    g_front_chip_threshold = temp_value;
+                    break;
+                case 1:
+                    g_middle_loss_max = temp_value;
+                    break;
+                case 2:
+                    g_trail_empty_threshold = temp_value;
+                    break;
+                }
+                edit_mode = 0;
+                // 更新显示文本
+                char new_menu_0[16], new_menu_1[16], new_menu_2[16];
+                sprintf(new_menu_0, "1.FrontTh:%d", g_front_chip_threshold);
+                sprintf(new_menu_1, "2.MidLoss:%d", g_middle_loss_max);
+                sprintf(new_menu_2, "3.TrailTh:%d", g_trail_empty_threshold);
+                // 复制新值到显示数组
+                sprintf(menu_items[0], "%s", new_menu_0);
+                sprintf(menu_items[1], "%s", new_menu_1);
+                sprintf(menu_items[2], "%s", new_menu_2);
+            }
+            else
+            {
+                if (menu_index < 3) // 可编辑项
+                {
+                    edit_mode = 1;
+                    switch (menu_index)
+                    {
+                    case 0:
+                        temp_value = g_front_chip_threshold;
+                        break;
+                    case 1:
+                        temp_value = g_middle_loss_max;
+                        break;
+                    case 2:
+                        temp_value = g_trail_empty_threshold;
+                        break;
+                    }
+                }
+                else // BACK
+                {
+                    Menu_Refresh();
+                    return;
+                }
+            }
+        }
+        else if (key == key_back)
+        {
+            if (edit_mode)
+            {
+                edit_mode = 0; // 取消编辑
+            }
+            else
+            {
+                Menu_Refresh();
+                return; // 退出设置
+            }
+        }
+
+        Delay_ms(1);
+    }
 }
 
 /**
@@ -276,12 +486,16 @@ void Func_SetTime(void)
     Delay_ms(500);
 
     // 创建非阻塞定时
-    DelayTimer timer_1s;         // 创建一个1秒定时器
-    TIM2_Start(&timer_1s, 2000); // 启动1秒定时器(测试发现定时1s比实际时间快1s，所以这里就大概填为2s了*By CYZ)
+    DelayTimer timer_1s;          // 创建一个1秒定时器
+    Delay_Start(&timer_1s, 1000); // 启动1秒定时器
 
     while (1)
     {
-        if (KEY_GetState(KEY_OK) == KEY_PRESSED)
+        Key_Status_Process();                   // 调用按键状态处理
+        Key_action key = Key_Get_Press_Event(); // 获取按键事件
+        CYZ_Receiver_Process();                 // 处理接收到的特定数据包
+
+        if (key == key_enter)
         { // Delay_NonBlocking_Start(100);//延时100ms
             // 发送获取时间指令
             USART1_ClearRxBuffer();            // 清空接收缓冲区
@@ -300,7 +514,7 @@ void Func_SetTime(void)
         }
         // 每过一秒刷新一次
         // Delay_ms(1000);(阻塞延时)
-        if (TIM2_Check(&timer_1s)) // 每过一秒,执行一次(非阻塞延时)
+        if (Delay_Check(&timer_1s)) // 每过一秒,执行一次(非阻塞延时)
         {
             time_info.second++;
             if (time_info.second >= 60)
@@ -320,10 +534,10 @@ void Func_SetTime(void)
             OLED_ClearArea(0, 35, 128, 16);
             OLED_ShowString(32, 32, time_str, OLED_8X16);
             OLED_Update();
-            TIM2_Reset(&timer_1s); // 重置延时
+            Delay_Reset(&timer_1s); // 重置延时
         } // end if
 
-        if (KEY_GetState(KEY_BACK) == KEY_PRESSED)
+        if (key == key_back)
             break; // 返回键
 
     } // end while
@@ -362,10 +576,11 @@ void Func_Snake_Game(void)
  * 参    数：无
  * 返 回 值：无
  **/
-void Func_Esp8266(void)
+void Func_Updata_Esp8266(void)
 {
     OLED_Clear();
     OLED_ShowString(20, 0, "UPLOAD DATA", OLED_8X16);
+    OLED_ShowString(10, 50, "Press OK to Upload", OLED_6X8);
     OLED_Update();
 
     /*构建JSON格式包进行发送*/
@@ -382,12 +597,16 @@ void Func_Esp8266(void)
     // DataPacket_AddInt(&packet, "lead_empty_count", 1);
 
     char str[32];
+    Key_action key; // 声明按键变量
     // 等待返回键
     while (1)
     {
-        if (KEY_GetState(KEY_OK) == KEY_PRESSED)
+        Key_Status_Process();        // 调用按键状态处理
+        key = Key_Get_Press_Event(); // 获取按键事件
+
+        if (key == key_enter)
         {
-            Delay_ms(200); // 延时去抖动
+
             OLED_ClearArea(0, 16, 128, 48);
             snprintf(str, sizeof(str), "Begin upload...");
             OLED_ShowString(4, 17, str, OLED_8X16);
@@ -400,11 +619,12 @@ void Func_Esp8266(void)
             OLED_Update();
         }
 
-        if (KEY_GetState(KEY_BACK) == KEY_PRESSED) // 返回键
+        if (key == key_back) // 返回键
         {
             break;
         }
-        Delay_ms(20);
+        CYZ_Receiver_Process(); // 处理接收到的特定数据包
+        Delay_ms(1);
     }
 
     Menu_Refresh();
@@ -418,17 +638,57 @@ void Func_ADC_Test(void)
 {
     OLED_Clear();
     OLED_Update();
-    wave_drain(); // 调用ADC波形显示函数
+    show_adc_display();
     Menu_Refresh();
 }
 /**
- * 函    数：读取内部温度传感器
+ * 函    数：读取温湿度信息
  * 参    数：无
  * 返 回 值：无
  **/
 void Func_Read_Temp(void)
 {
-    show_temperature_only(); // 调用读取温度函数
+    OLED_Clear();
+    OLED_ShowString(24, 24, "Reading...", OLED_8X16);
+    OLED_Update();
+    DelayTimer updata_dht11_gap;
+    Delay_Start(&updata_dht11_gap, 1200); // 每个1.2秒读取一次
+    while (1)
+    {
+        Key_Status_Process(); // 调用按键状态处理
+
+        if (Delay_Check(&updata_dht11_gap))
+        {
+            // 读取DHT11数据
+            if (DHT11_Read_Data(&DHT11_Data) == 0)
+            {
+                break;
+            }
+            // 清屏
+            OLED_Clear();
+            // 1. 标题行（顶部）
+            OLED_ShowString(16, 0, "DHT11 SENSOR", OLED_8X16);
+            // 2. 温度显示（左侧）
+            OLED_ShowString(16, 16, "TEMP", OLED_8X16);
+            // 温度数值区域
+            char temp_str[8];
+            sprintf(temp_str, "%02d.%d", DHT11_Data.temperature_int, DHT11_Data.temperature_dec);
+            OLED_ShowString(16, 32, temp_str, OLED_8X16);
+            OLED_ShowString(48, 32, "C", OLED_8X16);
+            OLED_ShowString(72, 16, "HUMI", OLED_8X16);
+            // 湿度数值区域
+            char humi_str[8];
+            sprintf(humi_str, "%02d.%d", DHT11_Data.humidity_int, DHT11_Data.humidity_dec);
+            OLED_ShowString(72, 32, humi_str, OLED_8X16);
+            OLED_ShowString(104, 32, "%", OLED_8X16);
+            OLED_ShowString(38, 56, "BACK:EXIT", OLED_6X8);
+            OLED_Update();
+            Delay_Reset(&updata_dht11_gap);
+        }
+        if (Key_Get_Press_Event() == key_back)
+            break;
+        CYZ_Receiver_Process(); // 处理接收到的特定数据包
+    }
     Menu_Refresh();
 }
 /**
@@ -441,14 +701,15 @@ void Func_About(void)
     OLED_Clear();
     OLED_ShowString(0, 0, "Tape Carrier", OLED_8X16);
     OLED_ShowString(0, 16, "Chip Counter", OLED_8X16);
-    OLED_ShowString(0, 32, "V3.6.0", OLED_8X16);
+    OLED_ShowString(0, 32, "V6.6.0", OLED_8X16);
     OLED_ShowString(0, 48, "Press BACK", OLED_8X16);
     OLED_Update();
 
     // 等待返回键
-    while (KEY_Scan() != KEY_BACK)
+    while (Key_Get_Press_Event() != key_back)
     {
-        Delay_ms(10);
+        Key_Status_Process();
+        CYZ_Receiver_Process(); // 处理接收到的特定数据包
     }
 
     Menu_Refresh();
@@ -467,7 +728,7 @@ void Statistics_OnMissingDetected(void)
     char str[32];
 
     /*暂停计数*/
-    data->is_paused = 1;
+    data->is_beginning = 1;
 
     /*蜂鸣器响三次*/
     Buzzer_Beep(3, 200, 100); // 响3次，每次200ms，间隔100ms
@@ -484,22 +745,25 @@ void Statistics_OnMissingDetected(void)
     /*等待用户确认*/
     while (1)
     {
-        uint8_t key = KEY_Scan();
+        Key_Status_Process();
+        Key_action key = Key_Get_Press_Event();
 
-        if (key == KEY_OK)
+        if (key == key_enter)
         {
             /*用户确认继续，恢复计数*/
             Statistics_Resume();
             break;
         }
-        else if (key == KEY_BACK)
+        else if (key == key_back)
         {
             /*用户取消，保持暂停状态，返回菜单*/
             // g_live_counting_active = 0;
             // Sensor_EnableCounting(0);
             Statistics_Pause();
             Menu_Refresh();
-            return;
+            g_statistics.force_update_display = 1; // 强制更新标志
+            // return;
+            break;
         }
 
         Delay_ms(10);
@@ -521,7 +785,7 @@ void Statistics_OnExtraChipDetected(void)
     char str[32];
 
     /*暂停计数*/
-    data->is_paused = 1;
+    data->is_beginning = 1;
 
     /*蜂鸣器响三次*/
     Buzzer_Beep(3, 200, 100); // 响3次，每次200ms，间隔100ms
@@ -538,22 +802,24 @@ void Statistics_OnExtraChipDetected(void)
     /*等待用户确认*/
     while (1)
     {
-        uint8_t key = KEY_Scan();
-
-        if (key == KEY_OK)
+        Key_Status_Process();
+        Key_action key = Key_Get_Press_Event();
+        if (key == key_enter)
         {
             /*用户确认继续，恢复计数*/
             Statistics_Resume();
             break;
         }
-        else if (key == KEY_BACK)
+        else if (key == key_back)
         {
             /*用户取消，保持暂停状态，返回菜单*/
             // g_live_counting_active = 0;
             // Sensor_EnableCounting(0);
             Statistics_Pause();
             Menu_Refresh();
-            return;
+            g_statistics.force_update_display = 1;
+            // return;
+            break;
         }
 
         Delay_ms(10);

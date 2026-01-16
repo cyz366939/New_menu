@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>   // 也包含 NULL 的定义
 #include "OLED.h"
-#include "KEY.h"
+#include "Key_multi.h"
 #include "Timestamp.h"
 #include <string.h>
 
@@ -65,7 +65,7 @@ typedef struct
 
 /*函数声明*/
 void Menu_Init(MenuItem_t *root_menu);
-void Menu_Process(uint8_t key);
+void Menu_Process(Key_action key);
 void Menu_Display(void);
 void Menu_Refresh(void);
 MenuItem_t* Menu_CreateItem(char *name, MenuItemType_t type);

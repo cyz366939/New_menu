@@ -6,28 +6,30 @@
 日    期：2025-12-26
 */
 
+// ========================================
+// 方案1：基于TIM2定时器的延时实现
+// ========================================
+
+#if defined(DELAY_USE_TIM2)
+
 static volatile uint32_t system_time = 0; // 系统时间（毫秒）
 
 /**
  * @brief  初始化TIM2为1ms定时器
  * @note   定时器时钟固定为36MHz
  */
-void Delay_TIM2_Init(void)
+void Delay_Init(void)
 {
+  // 定时器配置
   TIM_TimeBaseInitTypeDef TIM_InitStruct = {0};
   NVIC_InitTypeDef NVIC_InitStruct = {0};
 
   // 1. 使能TIM2时钟（APB1总线）
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
-
-  //    配置TIM2为1ms中断
-  //    36MHz时钟，分频到1KHz（1ms）
-  //    分频值 = 36MHz / 1KHz = 36000
-  //    定时器最大分频是65535，使用分频到10KHz再计数到10
-
-  // 配置为：36MHz / 3600 = 10KHz，计数10次 = 1ms
+  // 实际测试发现时钟频率为72MHz，因此需要修改预分频值
+  //  原来的**配置为：36MHz / 3600 = 10KHz，计数10次 = 1ms
   TIM_InitStruct.TIM_Period = 10 - 1;      // 自动重装载值：10
-  TIM_InitStruct.TIM_Prescaler = 3600 - 1; // 预分频值：3600（36MHz/3600=10KHz）
+  TIM_InitStruct.TIM_Prescaler = 7200 - 1; // 预分频值：7200（72MHz/7200=10KHz）
   TIM_InitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
   TIM_InitStruct.TIM_CounterMode = TIM_CounterMode_Up;
   TIM_InitStruct.TIM_RepetitionCounter = 0;
@@ -67,7 +69,7 @@ void TIM2_IRQHandler(void)
  * @brief  获取当前系统时间
  * @return 当前时间（毫秒）
  */
-uint32_t TIM2_Now(void)
+uint32_t Delay_Now(void)
 {
   return system_time;
 }
@@ -77,7 +79,7 @@ uint32_t TIM2_Now(void)
  * @param  timer: 延时器指针
  * @param  ms: 延时时间（毫秒）
  */
-void TIM2_Start(DelayTimer *timer, uint32_t ms)
+void Delay_Start(DelayTimer *timer, uint32_t ms)
 {
   timer->start_time = system_time;
   timer->delay_ms = ms;
@@ -89,7 +91,7 @@ void TIM2_Start(DelayTimer *timer, uint32_t ms)
  * @param  timer: 延时器指针
  * @return true: 延时完成, false: 延时未完成
  */
-bool TIM2_Check(DelayTimer *timer)
+bool Delay_Check(DelayTimer *timer)
 {
   if (!timer->is_running)
   {
@@ -113,38 +115,157 @@ bool TIM2_Check(DelayTimer *timer)
  * @brief  重置延时（重新开始计时）
  * @param  timer: 延时器指针
  */
-void TIM2_Reset(DelayTimer *timer)
+void Delay_Reset(DelayTimer *timer)
 {
   timer->start_time = system_time;
   timer->is_running = true;
 }
 
-/****************************************************************************** */
-/*基于SysTick的阻塞延时函数*/
+/**
+ * @brief  微秒级阻塞延时（基于软件循环）
+ * @param  nus: 延时微秒数
+ * @note   使用精确的软件循环实现，不干扰TIM2定时器
+ */
 void Delay_us(uint32_t nus)
 {
-  uint32_t temp;
-  SysTick->LOAD = 9 * nus; // 设置重装载值
-  SysTick->VAL = 0X00;     // 清空计数器
-  SysTick->CTRL = 0X01;    // 使能定时器
-  do
+  uint32_t i;
+  // STM32F103 @ 72MHz，优化后每次循环约8个时钟周期
+  // 72MHz / 8 = 9MHz，即每微秒需要9次循环
+  for (i = 0; i < nus * 9; i++)
   {
-    temp = SysTick->CTRL; // 读取当前倒计数值
-  } while ((temp & 0x01) && (!(temp & (1 << 16))));
-  SysTick->CTRL = 0x00; // 关闭计数器
-  SysTick->VAL = 0X00;  // 清空计数器
+    __NOP(); // 空操作指令，确保循环不被优化掉
+  }
 }
 
-void Delay_ms(int32_t nms)
+/**
+ * @brief  毫秒级阻塞延时（基于TIM2查询）
+ * @param  nms: 延时毫秒数
+ * @note   不干扰TIM2的1ms中断
+ */
+void Delay_ms(uint32_t nms)
 {
-  uint32_t temp;
-  SysTick->LOAD = 9000 * nms; // 设置重装载值
-  SysTick->VAL = 0X00;        // 清空计数器
-  SysTick->CTRL = 0X01;       // 使能定时器
-  do
+  uint32_t start = system_time;
+  while ((system_time - start) < nms)
   {
-    temp = SysTick->CTRL; // 读取当前倒计数值
-  } while ((temp & 0x01) && (!(temp & (1 << 16))));
-  SysTick->CTRL = 0x00; // 关闭计数器
-  SysTick->VAL = 0X00;  // 清空计数器
+    // 空等待，TIM2中断会在后台更新system_time
+  }
 }
+
+#endif // DELAY_USE_TIM2
+
+// ========================================
+// 方案2：基于SysTick定时器的延时实现
+// ========================================
+
+#if defined(DELAY_USE_SYSTICK)
+
+static volatile uint32_t system_time = 0; // 系统时间（毫秒）
+
+/**
+ * @brief  初始化SysTick为1ms定时器
+ * @note   SysTick时钟为HCLK/8 = 9MHz
+ */
+void Delay_Init(void)
+{
+  // 配置SysTick为1ms中断
+  // HCLK = 72MHz，HCLK/8 = 9MHz
+  // 要得到1ms中断：9000000 / 1000 = 9000
+  SysTick->CTRL = 0xFFFB;   // 设置嘀嗒定时器时钟源为HCLK/8,并开启中断，启动嘀嗒定时器
+  SysTick->LOAD = 9000 - 1; // 重装载值：9000 (9MHz / 9000 = 1KHz = 1ms)
+}
+
+/**
+ * @brief  SysTick中断服务函数
+ */
+void SysTick_Handler(void)
+{
+  system_time++; // 系统时间增加1ms
+}
+
+/**
+ * @brief  获取当前系统时间
+ * @return 当前时间（毫秒）
+ */
+uint32_t Delay_Now(void)
+{
+  return system_time;
+}
+
+/**
+ * @brief  开始非阻塞延时
+ * @param  timer: 延时器指针
+ * @param  ms: 延时时间（毫秒）
+ */
+void Delay_Start(DelayTimer *timer, uint32_t ms)
+{
+  timer->start_time = system_time;
+  timer->delay_ms = ms;
+  timer->is_running = true;
+}
+
+/**
+ * @brief  检查延时是否完成
+ * @param  timer: 延时器指针
+ * @return true: 延时完成, false: 延时未完成
+ */
+bool Delay_Check(DelayTimer *timer)
+{
+  if (!timer->is_running)
+  {
+    return false;
+  }
+
+  // 计算经过的时间
+  uint32_t elapsed = system_time - timer->start_time;
+
+  // 检查是否达到延时时间
+  if (elapsed >= timer->delay_ms)
+  {
+    timer->is_running = false;
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * @brief  重置延时（重新开始计时）
+ * @param  timer: 延时器指针
+ */
+void Delay_Reset(DelayTimer *timer)
+{
+  timer->start_time = system_time;
+  timer->is_running = true;
+}
+
+/**
+ * @brief  微秒级阻塞延时（基于软件计数，不中断SysTick）
+ * @param  nus: 延时微秒数
+ * @note   使用空循环实现延时，不干扰SysTick定时器
+ */
+void Delay_us(uint32_t nus)
+{
+  uint32_t i;
+  // STM32F103 @ 72MHz，优化后每次循环约8个时钟周期
+  // 72MHz / 8 = 9MHz，即每微秒需要9次循环
+  for (i = 0; i < nus * 9; i++)
+  {
+    __NOP(); // 空操作指令，确保循环不被优化掉
+  }
+}
+
+/**
+ * @brief  毫秒级阻塞延时（基于SysTick查询，不关闭中断）
+ * @param  nms: 延时毫秒数
+ * @note   不影响SysTick的1ms中断，只查询当前计数值
+ */
+void Delay_ms(uint32_t nms)
+{
+  uint32_t start = system_time;
+  while ((system_time - start) < nms)
+  {
+    // 空等待，SysTick中断会在后台更新system_time
+  }
+}
+
+#endif // DELAY_USE_SYSTICK

@@ -9,23 +9,23 @@
 
 void System_startup(void); // 函数声明，系统启动进度条
 void MX_GPIO_Init(void);   // 函数声明，初始化GPIO
-
-void cyz_data_handler(const char *data); // 函数声明，特定数据包接收器回调函数
+void PC13_Toggle(void);    // 函数声明，LED状态反转
 
 int main(void)
 {
 
-  Delay_TIM2_Init();                                    // 初始化TIM2定时器用于非阻塞延时
-  MX_GPIO_Init();                                       /*初始化其余GPIO*/
-  SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8); // 设置嘀嗒定时器时钟源为HCLK/8
-  OLED_Init();                                          /*初始化OLED*/
-  USART1_Init(115200);                                  /*初始化串口*/
-  KEY_Init();                                           /*初始化按键*/
-  Sensor_Init();                                        /*初始化传感器*/
-  Buzzer_Init();                                        /*初始化蜂鸣器*/
-  Statistics_Init();                                    /*初始化统计系统*/
-  ADC_DualChannel_Init();                               /*初始化ADC*/
-  CYZ_Receiver_Init(115200);                            /*初始化特定格式数据包接收器*/
+  GPIO_Unused_Init();        // 初始化未使用的GPIO引脚为模拟输入模式，避免悬空
+  Delay_Init();              // 初始化延时系统（根据宏选择TIM2或SysTick）
+  MX_GPIO_Init();            /*初始化其余GPIO*/
+  OLED_Init();               /*初始化OLED*/
+  USART1_Init(115200);       /*初始化串口*/
+  Key_Init();                /*初始化按键*/
+  Sensor_Init();             /*初始化传感器*/
+  Buzzer_Init();             /*初始化蜂鸣器*/
+  Statistics_Init();         /*初始化统计系统*/
+  ADC1_Init();               /*初始化ADC*/
+  CYZ_Receiver_Init(115200); /*初始化特定格式数据包接收器*/
+  DHT11_Init();              /*初始化DHT11*/
   // System_startup();// 系统启动进度条
   Menu_Setup();   /*创建并初始化菜单*/
   Menu_Display(); /*显示初始菜单*/
@@ -36,13 +36,11 @@ int main(void)
   /*主循环*/
   while (1)
   {
-    uint8_t key = KEY_Scan();
-    /*扫描按键*/
-    if (key != KEY_NONE)
-    {
-      /*处理按键*/
-      Menu_Process(key);
-    }
+    /*扫描按键（状态机处理，建议10ms调用一次）*/
+    Key_Status_Process();
+    /*处理按键事件（支持长按连续翻动）*/
+    Menu_Process(key_none); // 参数0表示不使用直接按键值，在Menu_Process内部获取事件
+
     /*刷新菜单显示（仅在非实时统计模式下）*/
     /*实时统计模式下，显示由LiveCounting_Display()函数处理*/
     Menu_Display();
@@ -105,4 +103,11 @@ void MX_GPIO_Init(void)
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
   GPIO_Init(GPIOC, &GPIO_InitStructure);
   GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_RESET); // 初始状态：LED灭
+}
+void PC13_Toggle(void)
+{
+  GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_RESET);
+  Delay_ms(500); // 延时500ms
+  GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);
+  Delay_ms(500); // 延时500ms
 }

@@ -9,10 +9,12 @@
 Hardware Connection:
  * PA0: 定位孔传感器-DO
  * PA1: 载带芯片检测传感器-DO
- * PA3: 系统开始计数控制-Button
+ * PA3: 自锁开关
  * PC13: 系统启动指示灯-LED(+)
  * USART1: 串口通信：PB6(TX)和PB7(RX)（重映射）
- * OLED: 用于显示统计信息: SCL:PB8,SDA:PB9
+ * OLED: 用于显示统计信息: SCL:PB8,SDA:PB9（重映射）
+ * PA8: 蜂鸣器-DO
+ * PB5: DHT11温湿度传感器-DI
 *******************************************************************************/
 KEY:
  *  PB0:UP_KEY
@@ -21,7 +23,5 @@ KEY:
  *  PA2:OK_KEY
 /******************************************************************************/
 Software Init:
-  * EXTI:EXTI0-PA0
-  * ADC:ADC12_IN4-PA4
-  * USART:UART1-PB6&PB7（Remaping）
-  * IIC:重映射的IIC1(本项目中使用软件模拟IIC,使用的也是硬件Remaping-IIC1的端口)
+  * PA4:ADC1_IN4(模拟输入)
+  * PB6&PB7:UART1-（Remaping）

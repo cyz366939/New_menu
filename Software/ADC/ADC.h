@@ -3,17 +3,12 @@
 #include "stm32f10x.h"
 #include "OLED.h"
 #include "Delay.h"
-#include "KEY.h"
+#include "Key_multi.h"
 #include <string.h>
-#include "USART1.h"
+#include <stdlib.h>  //用于abs()函数
 
-#define ADC_BUFFER_SIZE  128// DMA缓冲区大小
+void ADC1_Init(void);
+void show_adc_display(void);
 
-
-void ADC_DualChannel_Init(void);
-void Extract_ADC_Data(void);
-float Calculate_Temperature(uint16_t temp_adc);
-void wave_drain(void);
-void show_temperature_only(void);
 #endif
 

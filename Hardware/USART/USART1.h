@@ -13,7 +13,7 @@
 #define USART1_RX_BUFFER_SIZE     256     // 接收缓冲区大小
 #define USART1_TX_BUFFER_SIZE     256     // 发送缓冲区大小
 #define USART1_MAX_STRING_LEN     128     // 最大字符串长度
-#define USART1_TIMEOUT_MS         2000     // 默认超时时间(ms)
+#define USART1_TIMEOUT_MS         1000     // 默认超时时间(ms)
 
 // ================== 类型定义 ==================
 typedef enum {

@@ -4,7 +4,7 @@
 #include "Delay.h"
 #include "usart1.h"
 #include "OLED.h"
-#include "KEY.h"
+#include "Key_multi.h"
 #include "Menu.h"
 #include "Sensor.h"
 #include "Statistics.h"
@@ -14,7 +14,7 @@
 #include <Menu_creat.h>
 #include "ADC.h"
 #include "CYZ_Package.h"
-
+#include "GPIO_Config.h"
 
 #endif
 
