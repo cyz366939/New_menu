@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "ESP_连接阿里云_Ariduno",
+			"path": "../../../../MCU/ESP-12F/ESP_连接阿里云_Ariduno"
+		}
+	],
+	"settings": {}
+}
