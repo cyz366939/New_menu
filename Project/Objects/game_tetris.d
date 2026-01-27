@@ -37,4 +37,5 @@
 .\objects\game_tetris.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdarg.h
 .\objects\game_tetris.o: ..\Software\Delay\Delay.h
 .\objects\game_tetris.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\game_tetris.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 .\objects\game_tetris.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h

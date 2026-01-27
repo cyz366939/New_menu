@@ -37,3 +37,4 @@
 .\objects\usart1.o: ..\Hardware\OLED\OLED_Data.h
 .\objects\usart1.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\math.h
 .\objects\usart1.o: ..\Software\Delay\delay.h
+.\objects\usart1.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stddef.h

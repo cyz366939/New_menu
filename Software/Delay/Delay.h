@@ -3,7 +3,7 @@
 
 #include "stm32f10x.h"
 #include <stdbool.h>
-
+#include <stddef.h>
 // ========================================
 // 延时方案选择说明
 // ========================================
@@ -21,22 +21,23 @@
 // ========================================
 
 // 取消注释下面的一行来选择延时方案
-#define DELAY_USE_TIM2     // 使用定时器2实现延时（方案1）
+#define DELAY_USE_TIM2 // 使用定时器2实现延时（方案1）
 //#define DELAY_USE_SYSTICK  // 使用系统嘀嗒定时器实现延时（方案2）
 
 // 延时控制结构
-typedef struct {
-    uint32_t start_time;    // 开始时间（毫秒）
-    uint32_t delay_ms;      // 延时时间（毫秒）
-    bool is_running;        // 是否正在运行
+typedef struct
+{
+    uint32_t start_time; // 开始时间（毫秒）
+    uint32_t delay_ms;   // 延时时间（毫秒）
+    bool is_running;     // 是否正在运行
 } DelayTimer;
 
 // 函数声明（保持函数名不变，实现由宏开关控制）
-void Delay_Init(void);                             // 初始化延时系统
-void Delay_Start(DelayTimer* timer, uint32_t ms);  // 开始非阻塞延时
-bool Delay_Check(DelayTimer* timer);               // 检查非阻塞延时
-void Delay_Reset(DelayTimer* timer);               // 重置非阻塞延时
-uint32_t Delay_Now(void);                          // 获取当前系统时间（毫秒）
+void Delay_Init(void);                            // 初始化延时系统
+bool Delay_Start(DelayTimer *timer, uint32_t ms); // 开始非阻塞延时
+bool Delay_Check(DelayTimer *timer);              // 检查非阻塞延时
+void Delay_Stop(DelayTimer *timer);
+uint32_t Delay_Get_Ticks(void); // 获取当前系统时间（毫秒）
 
 /*基础阻塞延时*/
 void Delay_us(uint32_t nus);

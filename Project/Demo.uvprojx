@@ -340,7 +340,7 @@
               <MiscControls>--locale=english</MiscControls>
               <Define>USE_STDPERIPH_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\Libraries\CMSIS\CM3\CoreSupport;..\Libraries\STM32F10x_StdPeriph_Driver\inc;..\Libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x;..\Hardware\OLED;..\Software\Delay;..\User;..\Software\Menu;..\Hardware\KEY;..\Hardware\Sensor;..\Software\Statistics;..\Hardware\Buzzer;..\ESP_12F;..\Software\Game;..\Hardware\ESP8266;..\Hardware\USART;..\Software\Timestamp;..\Software\ADC;..\Software\DataPackageRx;..\Hardware\DHT11;..\Hardware\GPIO_Config</IncludePath>
+              <IncludePath>..\Libraries\CMSIS\CM3\CoreSupport;..\Libraries\STM32F10x_StdPeriph_Driver\inc;..\Libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x;..\Hardware\OLED;..\Software\Delay;..\User;..\Software\Menu;..\Hardware\KEY;..\Hardware\Sensor;..\Software\Statistics;..\Hardware\Buzzer;..\ESP_12F;..\Software\Game;..\Hardware\ESP8266;..\Hardware\USART;..\Software\Timestamp;..\Software\ADC;..\Software\DataPackageRx;..\Hardware\DHT11;..\Hardware\GPIO_Config;..\Hardware\W25QXX</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -888,6 +888,21 @@
               <FileName>UPDATE_LOG.md</FileName>
               <FileType>5</FileType>
               <FilePath>..\Hardware\GPIO_Config\UPDATE_LOG.md</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>W25QXX</GroupName>
+          <Files>
+            <File>
+              <FileName>W25Q64.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Hardware\W25QXX\W25Q64.c</FilePath>
+            </File>
+            <File>
+              <FileName>W25Q64.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Hardware\W25QXX\W25Q64.h</FilePath>
             </File>
           </Files>
         </Group>

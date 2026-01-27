@@ -31,3 +31,4 @@
 .\objects\stm32f10x_it.o: ..\Libraries\STM32F10x_StdPeriph_Driver\inc\misc.h
 .\objects\stm32f10x_it.o: ..\Software\Delay\Delay.h
 .\objects\stm32f10x_it.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\stm32f10x_it.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stddef.h

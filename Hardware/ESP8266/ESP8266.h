@@ -4,6 +4,7 @@
 #include "stm32f10x.h"
 #include "usart1.h"
 #include "delay.h"
+#include "DHT11.h"
 #include "statistics.h"
 #include <stdint.h>
 #include <stdbool.h>
@@ -92,6 +93,9 @@ void DataForward_PrintStatus(void);
 
 //发送统计数据到ESP8266
 void ESP8266_UploadDataPoints(StatisticsData_t*statistics_struct);
+
+//发送温湿度数据到ESP8266
+void ESP8266_SendDHT11Data(void);
 
 #endif /* __DATA_FORWARD_H */
 

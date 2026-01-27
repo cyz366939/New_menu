@@ -94,7 +94,7 @@ uint8_t DHT11_Read_Data(DHT11_t *pDHT11)
             break;
         }
     }
-    Delay_Reset(&timeoutDelay); // 重新启动定时
+    Delay_Start(&timeoutDelay, 200); // 重新启动定时
     while (DHT11_Read_Pin() == 1)
     {
         if (Delay_Check(&timeoutDelay))
@@ -102,7 +102,7 @@ uint8_t DHT11_Read_Data(DHT11_t *pDHT11)
             break;
         }
     }
-    Delay_Reset(&timeoutDelay); // 重新启动定时
+    Delay_Start(&timeoutDelay, 200); // 重新启动定时
     while (DHT11_Read_Pin() == 0)
     {
         if (Delay_Check(&timeoutDelay))
@@ -135,3 +135,25 @@ uint8_t DHT11_Read_Data(DHT11_t *pDHT11)
         return 0; // 读取失败
     }
 }
+
+/**
+ * @brief  读取DHT11数据，直接返回带小数的温度和湿度
+ * @param  temperature: 温度指针，返回温度值（单位：摄氏度）
+ * @param  humidity: 湿度指针，返回湿度值（单位：%RH）
+ * @return 1: 读取成功，0: 读取失败
+ * @note   温度和湿度格式：25.6°C, 60.5%RH
+ */
+uint8_t DHT11_Read_Float(float *temperature, float *humidity)
+{
+    DHT11_t data;
+    if (DHT11_Read_Data(&data))
+    {
+        // 将整数和小数部分合并为浮点数
+        // DHT11的小数部分只有1位，所以除以10
+        *temperature = (float)data.temperature_int + (float)data.temperature_dec / 10.0f;
+        *humidity = (float)data.humidity_int + (float)data.humidity_dec / 10.0f;
+        return 1; // 读取成功
+    }
+    return 0; // 读取失败
+}
+

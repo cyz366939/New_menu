@@ -40,5 +40,6 @@
 .\objects\esp8266cmd.o: ..\Hardware\KEY\Key_multi.h
 .\objects\esp8266cmd.o: ..\Software\Delay\Delay.h
 .\objects\esp8266cmd.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\esp8266cmd.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 .\objects\esp8266cmd.o: ..\Software\Timestamp\Timestamp.h
 .\objects\esp8266cmd.o: ..\Hardware\USART\USART1.h

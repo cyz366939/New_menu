@@ -31,6 +31,7 @@
 .\objects\main.o: ..\Libraries\STM32F10x_StdPeriph_Driver\inc\misc.h
 .\objects\main.o: ..\Software\Delay\Delay.h
 .\objects\main.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\main.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 .\objects\main.o: ..\Hardware\USART\usart1.h
 .\objects\main.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 .\objects\main.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdarg.h
@@ -46,9 +47,9 @@
 .\objects\main.o: ..\Software\Menu\MenuFunctions.h
 .\objects\main.o: ..\Hardware\Buzzer\Buzzer.h
 .\objects\main.o: ..\Hardware\ESP8266\esp8266.h
+.\objects\main.o: ..\Hardware\DHT11\DHT11.h
 .\objects\main.o: ..\Software\ADC\ADC.h
 .\objects\main.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
-.\objects\main.o: ..\Hardware\DHT11\DHT11.h
 .\objects\main.o: ..\Software\Game\GAME_DINO_JUMP.h
 .\objects\main.o: ..\Software\Game\GAME_FLAPPYBIRD.h
 .\objects\main.o: ..\Software\Game\GAME_SNAKE.h

@@ -37,3 +37,4 @@
 .\objects\game_snake.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdarg.h
 .\objects\game_snake.o: ..\Software\Delay\Delay.h
 .\objects\game_snake.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\game_snake.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stddef.h

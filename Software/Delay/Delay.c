@@ -5,7 +5,6 @@
 作    者：褚耀宗
 日    期：2025-12-26
 */
-
 // ========================================
 // 方案1：基于TIM2定时器的延时实现
 // ========================================
@@ -20,6 +19,10 @@ static volatile uint32_t system_time = 0; // 系统时间（毫秒）
  */
 void Delay_Init(void)
 {
+  // 在此方案中，开启嘀嗒定时器只用于实现微秒延时
+  SysTick->VAL = 0;                                // 清零计数器
+  SysTick->LOAD = 72000 - 1;                       // 1ms中断，重装载值 = 72000 - 1
+  SysTick->CTRL |= (1 << 2) | (1 << 1) | (1 << 0); // 选择HCLK，开启中断，使能定时器
   // 定时器配置
   TIM_TimeBaseInitTypeDef TIM_InitStruct = {0};
   NVIC_InitTypeDef NVIC_InitStruct = {0};
@@ -69,7 +72,7 @@ void TIM2_IRQHandler(void)
  * @brief  获取当前系统时间
  * @return 当前时间（毫秒）
  */
-uint32_t Delay_Now(void)
+uint32_t Delay_Get_Ticks(void)
 {
   return system_time;
 }
@@ -79,11 +82,14 @@ uint32_t Delay_Now(void)
  * @param  timer: 延时器指针
  * @param  ms: 延时时间（毫秒）
  */
-void Delay_Start(DelayTimer *timer, uint32_t ms)
+bool Delay_Start(DelayTimer *timer, uint32_t ms)
 {
+  if (timer == NULL)
+    return false;
   timer->start_time = system_time;
   timer->delay_ms = ms;
   timer->is_running = true;
+  return true;
 }
 
 /**
@@ -93,18 +99,16 @@ void Delay_Start(DelayTimer *timer, uint32_t ms)
  */
 bool Delay_Check(DelayTimer *timer)
 {
-  if (!timer->is_running)
-  {
+  if (timer == NULL)
     return false;
-  }
-
-  // 计算经过的时间
-  uint32_t elapsed = system_time - timer->start_time;
+  if (timer->is_running == false)
+    return false;
 
   // 检查是否达到延时时间
-  if (elapsed >= timer->delay_ms)
+  if (system_time - timer->start_time >= timer->delay_ms)
   {
     timer->is_running = false;
+    timer->start_time = 0; // 重置
     return true;
   }
 
@@ -112,13 +116,15 @@ bool Delay_Check(DelayTimer *timer)
 }
 
 /**
- * @brief  重置延时（重新开始计时）
+ * @brief  暂停延时
  * @param  timer: 延时器指针
  */
-void Delay_Reset(DelayTimer *timer)
+void Delay_Stop(DelayTimer *timer)
 {
-  timer->start_time = system_time;
-  timer->is_running = true;
+  if (timer == NULL)
+    return;
+  if (timer->is_running == true)
+    timer->is_running = false;
 }
 
 /**
@@ -211,7 +217,7 @@ void SysTick_Handler(void)
  * @brief  获取当前系统时间
  * @return 当前时间（毫秒）
  */
-uint32_t Delay_Now(void)
+uint32_t Delay_Get_Ticks(void)
 {
   return system_time;
 }
@@ -221,11 +227,14 @@ uint32_t Delay_Now(void)
  * @param  timer: 延时器指针
  * @param  ms: 延时时间（毫秒）
  */
-void Delay_Start(DelayTimer *timer, uint32_t ms)
+bool Delay_Start(DelayTimer *timer, uint32_t ms)
 {
+  if (timer == NULL)
+    return false;
   timer->start_time = system_time;
   timer->delay_ms = ms;
   timer->is_running = true;
+  return true;
 }
 
 /**
@@ -235,18 +244,16 @@ void Delay_Start(DelayTimer *timer, uint32_t ms)
  */
 bool Delay_Check(DelayTimer *timer)
 {
-  if (!timer->is_running)
-  {
+  if (timer == NULL)
     return false;
-  }
-
-  // 计算经过的时间
-  uint32_t elapsed = system_time - timer->start_time;
+  if (timer->is_running == false)
+    return false;
 
   // 检查是否达到延时时间
-  if (elapsed >= timer->delay_ms)
+  if (system_time - timer->start_time >= timer->delay_ms)
   {
     timer->is_running = false;
+    timer->start_time = 0; // 重置
     return true;
   }
 
@@ -254,13 +261,15 @@ bool Delay_Check(DelayTimer *timer)
 }
 
 /**
- * @brief  重置延时（重新开始计时）
+ * @brief  暂停延时
  * @param  timer: 延时器指针
  */
-void Delay_Reset(DelayTimer *timer)
+void Delay_Stop(DelayTimer *timer)
 {
-  timer->start_time = system_time;
-  timer->is_running = true;
+  if (timer == NULL)
+    return;
+  if (timer->is_running == true)
+    timer->is_running = false;
 }
 
 /**

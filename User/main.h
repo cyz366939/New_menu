@@ -15,6 +15,8 @@
 #include "ADC.h"
 #include "CYZ_Package.h"
 #include "GPIO_Config.h"
+#include "ESP8266.h"
+#include "DHT11.h"
 
 #endif
 

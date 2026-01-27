@@ -39,6 +39,7 @@
 .\objects\menu_creat.o: ..\Hardware\KEY\Key_multi.h
 .\objects\menu_creat.o: ..\Software\Delay\Delay.h
 .\objects\menu_creat.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\menu_creat.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 .\objects\menu_creat.o: ..\Software\Timestamp\Timestamp.h
 .\objects\menu_creat.o: ..\Hardware\USART\USART1.h
 .\objects\menu_creat.o: ..\Software\Menu\MenuFunctions.h
@@ -46,9 +47,9 @@
 .\objects\menu_creat.o: ..\Software\Statistics\Statistics.h
 .\objects\menu_creat.o: ..\Hardware\Buzzer\Buzzer.h
 .\objects\menu_creat.o: ..\Hardware\ESP8266\esp8266.h
+.\objects\menu_creat.o: ..\Hardware\DHT11\DHT11.h
 .\objects\menu_creat.o: ..\Software\ADC\ADC.h
 .\objects\menu_creat.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
-.\objects\menu_creat.o: ..\Hardware\DHT11\DHT11.h
 .\objects\menu_creat.o: ..\Software\Game\GAME_DINO_JUMP.h
 .\objects\menu_creat.o: ..\Software\Game\GAME_FLAPPYBIRD.h
 .\objects\menu_creat.o: ..\Software\Game\GAME_SNAKE.h

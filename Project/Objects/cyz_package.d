@@ -38,8 +38,10 @@
 .\objects\cyz_package.o: ..\Hardware\OLED\OLED_Data.h
 .\objects\cyz_package.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\math.h
 .\objects\cyz_package.o: ..\Software\Delay\delay.h
+.\objects\cyz_package.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 .\objects\cyz_package.o: ..\Software\Statistics\Statistics.h
 .\objects\cyz_package.o: ..\Hardware\ESP8266\esp8266.h
+.\objects\cyz_package.o: ..\Hardware\DHT11\DHT11.h
 .\objects\cyz_package.o: ..\Hardware\ESP8266\ESP8266Cmd.h
 .\objects\cyz_package.o: ..\Software\Menu\Menu.h
 .\objects\cyz_package.o: ..\Hardware\KEY\Key_multi.h

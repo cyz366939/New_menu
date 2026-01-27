@@ -50,6 +50,7 @@
 ".\objects\dht11.o"
 ".\objects\gpio_config.o"
 ".\objects\pin_config_summary.o"
+".\objects\w25q64.o"
 --library_type=microlib --strict --scatter ".\Objects\Demo.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

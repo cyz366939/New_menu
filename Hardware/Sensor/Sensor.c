@@ -95,69 +95,92 @@ void Sensor_Calibration(void)
 }
 
 /**
+ * 函    数：传感器中断处理函数（在主循环中调用）
+ * 参    数：无
+ * 返 回 值：无
+ * 说    明：在中断外进行实际的芯片检测和统计处理，避免中断中执行耗时操作
+ */
+
+volatile uint32_t exti0_trigger_count = 0;  // 触发次数计数
+volatile uint8_t sensor_interrupt_flag = 0; // 传感器中断标志位
+uint8_t chip_state = 0;                     // 检测芯片存在状态
+uint8_t chip_present = 0;                   // 芯片存在标志
+// 载带类型枚举实例
+carrier_class_t carrier_class = CARRIER_MSOP; // 首次初始化为MSOP类型
+
+void Sensor_ProcessInLoop(void)
+{
+    if (sensor_interrupt_flag) // 中断触发
+    {
+        // 根据当前载带类型选择不同的计数方式
+        switch (carrier_class)
+        {
+        case CARRIER_MSOP:
+            if (exti0_trigger_count % 2 == 1)
+            { // 确保是在有芯片槽的地方进行判断,奇数次触发
+                chip_state = Sensor_GetChipDetectState();
+                chip_present = (chip_state == SENSOR_HIGH) ? CHIP_PRESENT : CHIP_ABSENT;
+                Statistics_ProcessChip(chip_present);
+            }
+            break;
+        case CARRIER_SOT:
+            if (exti0_trigger_count > 0)
+            {
+                chip_state = Sensor_GetChipDetectState();
+                chip_present = (chip_state == SENSOR_HIGH) ? CHIP_PRESENT : CHIP_ABSENT;
+                Statistics_ProcessChip(chip_present);
+            }
+            break;
+        case CARRIER_QFP:
+            break;
+        case CARRIER_DFN:
+            break;
+        case CARRIER_QFN:
+            break;
+        case CARRIER_LQFP:
+            break;
+        case CARRIER_TSSOP:
+            break;
+        case CARRIER_SSOP:
+            break;
+        default:
+            // 未知类型，使用默认检测方式
+            if (exti0_trigger_count > 0)
+            {
+                chip_state = Sensor_GetChipDetectState();
+                chip_present = (chip_state == SENSOR_HIGH) ? CHIP_PRESENT : CHIP_ABSENT;
+                Statistics_ProcessChip(chip_present);
+            }
+            break;
+        }
+        // 清除中断标志位
+        sensor_interrupt_flag = 0;
+    }
+}
+
+/**
  * 函    数：PA0外部中断服务函数
  * 参    数：无
  * 返 回 值：无
- * 说    明：当检测到定位孔时，在时间窗口内检测芯片
+ * 说    明：检测到定位孔时设置标志位，实际处理在主循环中进行
  */
-uint32_t exti0_trigger_count = 0;
-// void EXTI0_IRQHandler(void)
-// {
-//     if(EXTI_GetITStatus(EXTI_Line0) != RESET)
-//     {
-//         // 立即清除中断标志，防止重复进入
-//         EXTI_ClearITPendingBit(EXTI_Line0);
-//         // 检查是否暂停，如果暂停则不处理
-//         if(g_sensor_counting_enabled==0 || g_statistics.is_beginning==0)
-//         {
-//             return;
-//         }
-//         // /*如果计数功能未使能，直接返回*/
-//         // if(!g_sensor_counting_enabled)
-//         // {
-//         //     return;
-//         // }
-//         // /*检查是否暂停，如果暂停则不处理*/
-//         // if(g_statistics.is_beginning)
-//         // {
-//         //     return;  // 暂停状态，不处理
-//         // }
-//         //Delay_ms(50);  // 延时100ms
-//         //g_statistics.exti0_trigger_count++;//触发计数加1
-//         exti0_trigger_count++;
-//         if((exti0_trigger_count)%2!=0)//偶数次触发
-//         {
-//         GPIO_WriteBit(GPIOC, GPIO_Pin_13,(exti0_trigger_count)%2);  // 切换LED状态
-//         /*读取芯片检测传感器状态*/
-//         uint8_t chip_state = Sensor_GetChipDetectState();
-//         /*判断芯片是否存在*/
-//         /*假设：高电平表示有芯片，低电平表示无芯片（可根据实际硬件调整）*/
-//         uint8_t chip_present = (chip_state == SENSOR_HIGH) ? CHIP_PRESENT : CHIP_ABSENT;
-//         /*调用统计处理函数*/
-//         Statistics_ProcessChip(chip_present);
-//         }
-//     }
-// }
 void EXTI0_IRQHandler(void)
 {
-    // if(GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_3) == 0){
+
     if (EXTI_GetITStatus(EXTI_Line0) == SET)
     {
-        Delay_ms(30);                                      // 延时去抖动
+        EXTI_ClearITPendingBit(EXTI_Line0);                // 清除中断标志位
+        Delay_ms(20);                                      // 延时去抖动
         if (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_0) == 1) // 确保是上升沿
         {
-            if (g_statistics.is_beginning == 1) // 计数功能使能后再进行计数
+            if (g_statistics.is_beginning == 1) // 计数功能使能后再进行计数统计
             {
-                exti0_trigger_count++;
+                exti0_trigger_count++; // 触发计数
+                // 设置中断标志位，实际处理在外部完成
+                sensor_interrupt_flag = 1;
             }
-            if (exti0_trigger_count % 2 == 1) // 确保是在有芯片槽的地方进行判断,奇数次触发
-            {
-                uint8_t chip_state = Sensor_GetChipDetectState();
-                uint8_t chip_present = (chip_state == SENSOR_HIGH) ? CHIP_PRESENT : CHIP_ABSENT;
-                Statistics_ProcessChip(chip_present);
-            }
+
         } // if (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_0) == 1)
         EXTI_ClearITPendingBit(EXTI_Line0); // 清除中断标志位
     } // if (EXTI_GetITStatus(EXTI_Line0) == SET)
-    //}//if(GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_3) == 0)
 }

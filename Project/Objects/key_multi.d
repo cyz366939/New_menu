@@ -31,3 +31,4 @@
 .\objects\key_multi.o: ..\Libraries\STM32F10x_StdPeriph_Driver\inc\misc.h
 .\objects\key_multi.o: ..\Software\Delay\Delay.h
 .\objects\key_multi.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\key_multi.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stddef.h

@@ -19,6 +19,6 @@ extern DHT11_t DHT11_Data;
 
 void DHT11_Init(void);
 uint8_t DHT11_Read_Data(DHT11_t *pDHT11);
+uint8_t DHT11_Read_Float(float *temperature, float *humidity);
 
 #endif /* DHT11_H_ */
-

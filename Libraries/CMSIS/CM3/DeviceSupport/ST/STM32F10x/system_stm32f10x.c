@@ -104,14 +104,14 @@
     
 #if defined (STM32F10X_LD_VL) || (defined STM32F10X_MD_VL) || (defined STM32F10X_HD_VL)
 /* #define SYSCLK_FREQ_HSE    HSE_VALUE */
- #define SYSCLK_FREQ_24MHz  24000000
+//#define SYSCLK_FREQ_24MHz  24000000
 #else
 /* #define SYSCLK_FREQ_HSE    HSE_VALUE */
 /* #define SYSCLK_FREQ_24MHz  24000000 */ 
 /* #define SYSCLK_FREQ_36MHz  36000000 */
 /* #define SYSCLK_FREQ_48MHz  48000000 */
 /* #define SYSCLK_FREQ_56MHz  56000000 */
-#define SYSCLK_FREQ_72MHz  72000000
+#define SYSCLK_FREQ_72MHz  72000000 /*使用72MHz，只需修改这里，下面的配置自动选择对应的设置*/
 #endif
 
 /*!< Uncomment the following line if you need to use external SRAM mounted
@@ -415,7 +415,7 @@ void SystemCoreClockUpdate (void)
   * @param  None
   * @retval None
   */
-static void SetSysClock(void)
+static void SetSysClock(void)//设置系统时钟频率
 {
 #ifdef SYSCLK_FREQ_HSE
   SetSysClockToHSE();
@@ -989,7 +989,7 @@ static void SetSysClockTo72(void)
   
   /* SYSCLK, HCLK, PCLK2 and PCLK1 configuration ---------------------------*/    
   /* Enable HSE */    
-  RCC->CR |= ((uint32_t)RCC_CR_HSEON);
+  RCC->CR |= ((uint32_t)RCC_CR_HSEON);//启动STM32芯片的外部高速时钟振荡器
  
   /* Wait till HSE is ready and if Time out is reached exit */
   do

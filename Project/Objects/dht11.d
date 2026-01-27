@@ -31,6 +31,7 @@
 .\objects\dht11.o: ..\Libraries\STM32F10x_StdPeriph_Driver\inc\misc.h
 .\objects\dht11.o: ..\Software\Delay\delay.h
 .\objects\dht11.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\dht11.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 .\objects\dht11.o: ..\Hardware\OLED\OLED.h
 .\objects\dht11.o: ..\Hardware\OLED\OLED_Data.h
 .\objects\dht11.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\string.h

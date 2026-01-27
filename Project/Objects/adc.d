@@ -37,5 +37,6 @@
 .\objects\adc.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdarg.h
 .\objects\adc.o: ..\Software\Delay\Delay.h
 .\objects\adc.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\adc.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 .\objects\adc.o: ..\Hardware\KEY\Key_multi.h
 .\objects\adc.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h

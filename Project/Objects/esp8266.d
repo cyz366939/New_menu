@@ -38,4 +38,6 @@
 .\objects\esp8266.o: ..\Hardware\OLED\OLED_Data.h
 .\objects\esp8266.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\math.h
 .\objects\esp8266.o: ..\Software\Delay\delay.h
+.\objects\esp8266.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
+.\objects\esp8266.o: ..\Hardware\DHT11\DHT11.h
 .\objects\esp8266.o: ..\Software\Statistics\statistics.h

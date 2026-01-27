@@ -54,7 +54,7 @@ Key_action Key_read_GND(void)
  */
 static uint32_t Key_Get_Time_Elapsed(uint32_t start_time)
 {
-    uint32_t current_time = Delay_Now();
+    uint32_t current_time = Delay_Get_Ticks();
 
     if (current_time >= start_time)
     {
@@ -88,8 +88,8 @@ void Key_Status_Process(void)
             // 检测到按键按下,记录按键信息
             Key_action_t = current_keys;
             Key_status_t = key_debouncing;
-            Key_struct_t.last_time = Delay_Now();
-            Key_struct_t.press_start_time = Delay_Now();
+            Key_struct_t.last_time = Delay_Get_Ticks();
+            Key_struct_t.press_start_time =Delay_Get_Ticks();
             Key_struct_t.long_press_flag = 0;
             Key_struct_t.repeat_flag = 0;
         }
@@ -126,7 +126,7 @@ void Key_Status_Process(void)
         {
             // 按键已释放,进入释放消抖状态
             Key_status_t = key_releasing;
-            Key_struct_t.last_time = Delay_Now();
+            Key_struct_t.last_time = Delay_Get_Ticks();
         }
         else if (elapsed_time >= KEY_LONG_PRESS_TIME_MS && !Key_struct_t.long_press_flag)
         {
@@ -141,7 +141,7 @@ void Key_Status_Process(void)
             {
                 Key_struct_t.key_repeat_flag = 1; // 设置重复按键标志
                 Key_struct_t.repeat_flag = 1;
-                Key_struct_t.last_repeat_time = Delay_Now();
+                Key_struct_t.last_repeat_time = Delay_Get_Ticks();
             }
             else
             {
@@ -149,7 +149,7 @@ void Key_Status_Process(void)
                 if (Key_Get_Time_Elapsed(Key_struct_t.last_repeat_time) >= KEY_SCROLL_SPEED_MS)
                 {
                     Key_struct_t.key_repeat_flag = 1;
-                    Key_struct_t.last_repeat_time = Delay_Now();
+                    Key_struct_t.last_repeat_time = Delay_Get_Ticks();
                 }
             }
         }

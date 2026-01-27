@@ -38,5 +38,6 @@
 .\objects\menu.o: ..\Hardware\KEY\Key_multi.h
 .\objects\menu.o: ..\Software\Delay\Delay.h
 .\objects\menu.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\menu.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 .\objects\menu.o: ..\Software\Timestamp\Timestamp.h
 .\objects\menu.o: ..\Hardware\USART\USART1.h

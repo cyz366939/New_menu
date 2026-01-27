@@ -46,7 +46,7 @@ void LiveCounting_Display(void)
     // 第四行：后空 / 多余统计
     sprintf(str, "T: %lu", data->trail_empty_count);
     OLED_ShowString(0, 48, str, OLED_8X16);
-    sprintf(str, "ADD: %lu", data->F_T_ADD);
+    sprintf(str, "ADD: %lu", data->Lead_Tail_ADD);
     OLED_ShowString(62, 48, str, OLED_8X16);
 
     OLED_Update();
@@ -64,7 +64,9 @@ void Func_LiveCounting(void)
     Statistics_Resume(); // 统计开始
     while (1)
     {
-        // 在子函数的循环中也需要调用按键状态处理
+        // 调用传感器中断标志处理数据
+        Sensor_ProcessInLoop();
+        // 调用按键状态处理
         Key_Status_Process();
         if (Key_Get_Press_Event() == key_back)
         {
@@ -86,7 +88,6 @@ void Func_LiveCounting(void)
             break; // 强制刷新后退出循环
         }
         CYZ_Receiver_Process(); // 处理接收到的特定数据包
-        Delay_ms(1);            // 刷新间隔1ms，同时为按键状态处理提供调用周期
     }
 }
 
@@ -129,7 +130,7 @@ void Func_LastResult(void)
         // 第四行：后空 / 多余统计
         sprintf(str, "T: %lu", data->trail_empty_count);
         OLED_ShowString(0, 48, str, OLED_8X16);
-        sprintf(str, "ADD:%lu", data->F_T_ADD);
+        sprintf(str, "ADD:%lu", data->Lead_Tail_ADD);
         OLED_ShowString(62, 48, str, OLED_8X16);
 
         OLED_Update();
@@ -247,9 +248,9 @@ void Func_ThresholdSettings(void)
     uint32_t temp_value;    // 临时存储编辑的值
 
     char menu_items[4][16] = {
-        "1.FrontTh:3",
+        "1.Front:3",
         "2.MidLoss:2",
-        "3.TrailTh:3",
+        "3.Tail:3",
         "BACK"};
 #define MENU_ITEMS_COUNT (sizeof(menu_items) / sizeof(menu_items[0]))
 
@@ -296,11 +297,11 @@ void Func_ThresholdSettings(void)
             // 右侧显示放大的当前编辑值
             char param_name[16];
             if (menu_index == 0)
-                sprintf(param_name, "FrontTh");
+                sprintf(param_name, "Front");
             else if (menu_index == 1)
                 sprintf(param_name, "MidLoss");
             else
-                sprintf(param_name, "TrailTh");
+                sprintf(param_name, "Tail");
 
             // 参数名（上方）
             OLED_ShowString(64, 8, param_name, OLED_6X8);
@@ -516,7 +517,7 @@ void Func_SetTime(void)
             OLED_ClearArea(0, 35, 128, 16);
             OLED_ShowString(32, 32, time_str, OLED_8X16);
             OLED_Update();
-            Delay_Reset(&timer_1s); // 重置延时
+            Delay_Start(&timer_1s, 1000); // 重置延时
         }
 
         if (key == key_back)
@@ -662,12 +663,27 @@ void Func_Read_Temp(void)
             sprintf(humi_str, "%02d.%d", DHT11_Data.humidity_int, DHT11_Data.humidity_dec);
             OLED_ShowString(72, 32, humi_str, OLED_8X16);
             OLED_ShowString(104, 32, "%", OLED_8X16);
-            OLED_ShowString(38, 56, "BACK:EXIT", OLED_6X8);
+            OLED_ShowString(38, 56, "OK:Upload", OLED_6X8);
             OLED_Update();
-            Delay_Reset(&updata_dht11_gap);
+            Delay_Start(&updata_dht11_gap, 1200);
         }
-        if (Key_Get_Press_Event() == key_back)
-            break;
+
+        // 获取按键事件（只调用一次，避免消费事件）
+        Key_action key = Key_Get_Press_Event(); // 获取按键事件
+
+        // 按下返回键退出
+        if (key == key_back)
+            break; // 返回键退出
+
+        // 按下OK键发送温湿度数据到云端
+        if (key == key_enter)
+        {
+            ESP8266_SendDHT11Data();                            // 发送温湿度数据
+            OLED_Clear();                                       // 清空屏幕
+            OLED_ShowString(16, 16, "Success send", OLED_8X16); // 显示"Temp:"
+            OLED_Update();                                      // 刷新显示
+            Delay_ms(200);                                      // 延时一段时间，以便观察数据
+        }
         CYZ_Receiver_Process(); // 处理接收到的特定数据包
     }
     Menu_Refresh();
@@ -694,6 +710,126 @@ void Func_About(void)
     }
 
     Menu_Refresh();
+}
+
+/**
+ * 函    数：芯片类型设置
+ * 参    数：无
+ * 返 回 值：无
+ * 说    明：选择不同的载带类型（支持多种载带类型，预留扩展）
+ */
+void Func_CarrierType(void)
+{
+    // uint8_t menu_index = 0;                    // 当前显示的菜单项索引
+    uint8_t current_selection = carrier_class; // 当前选择的载带类型
+    uint8_t display_start = 0;                 // 显示起始位置（用于滚动）
+    char page_info[8];                         // 页面信息字符串
+
+    // 载带类型名称数组
+    const char *carrier_names[] = {
+        "MSOP Carrier",  // CARRIER_MSOP
+        "SOT  Carrier",  // CARRIER_SOP
+        "QFP  Carrier",  // CARRIER_QFP
+        "DFN  Carrier",  // CARRIER_DFN
+        "QFN  Carrier",  // CARRIER_QFN
+        "LQFP Carrier",  // CARRIER_LQFP
+        "TSSOP Carrier", // CARRIER_TSSOP
+        "SSOP Carrier",  // CARRIER_SSOP
+    };
+
+// 定义每页显示的数量
+#define CARRIER_PAGE_SIZE 4
+// 定义总数量
+#define CARRIER_TOTAL_COUNT (sizeof(carrier_names) / sizeof(carrier_names[0]))
+
+    while (1)
+    {
+        Key_Status_Process();
+        Key_action key = Key_Get_Press_Event();
+
+        CYZ_Receiver_Process();
+
+        // 显示菜单
+        OLED_Clear();
+        OLED_ShowString(0, 0, "Carrier Type", OLED_8X16);
+
+        // 计算滚动显示
+        if (current_selection >= display_start + CARRIER_PAGE_SIZE)
+        {
+            display_start = current_selection - CARRIER_PAGE_SIZE + 1;
+        }
+        if (current_selection < display_start)
+        {
+            display_start = current_selection;
+        }
+
+        // 显示载带类型选项（支持滚动）
+        for (uint8_t i = 0; i < CARRIER_PAGE_SIZE; i++)
+        {
+            uint8_t real_index = display_start + i;
+            if (real_index >= CARRIER_TOTAL_COUNT)
+                break;
+
+            uint8_t y_pos = 16 + (i * 10);
+            if (real_index == current_selection)
+            {
+                OLED_ShowString(0, y_pos, ">", OLED_6X8);
+            }
+            else
+            {
+                OLED_ShowString(0, y_pos, " ", OLED_6X8);
+            }
+            OLED_ShowString(8, y_pos, (char *)carrier_names[real_index], OLED_6X8);
+        }
+
+        // 显示页码信息（当前选中的序号/总数）
+        sprintf(page_info, "%d/%d", current_selection + 1, CARRIER_TOTAL_COUNT);
+        OLED_ShowString(110, 4, page_info, OLED_6X8);
+
+        // 操作提示
+        OLED_ShowString(0, 56, "UP/DOWN SelectOK Save", OLED_6X8);
+        OLED_Update();
+
+        // 按键处理
+        if (key == key_up)
+        {
+            if (current_selection > 0)
+            {
+                current_selection--;
+            }
+            Delay_ms(50);
+        }
+        else if (key == key_down)
+        {
+            if (current_selection < CARRIER_TOTAL_COUNT - 1)
+            {
+                current_selection++;
+            }
+            Delay_ms(50);
+        }
+        else if (key == key_enter)
+        {
+            // 保存选择的载带类型
+            carrier_class = (carrier_class_t)current_selection;
+
+            // 显示保存成功提示
+            OLED_Clear();
+            OLED_ShowString(8, 16, "Succeed Saved!", OLED_8X16);
+            if (current_selection < CARRIER_TOTAL_COUNT)
+            {
+                OLED_ShowString(28, 32, (char *)carrier_names[current_selection], OLED_6X8);
+            }
+            OLED_Update();
+            Delay_ms(1000);
+            Menu_Refresh();
+            return;
+        }
+        else if (key == key_back)
+        {
+            Menu_Refresh();
+            return;
+        }
+    }
 }
 
 /**
@@ -776,7 +912,7 @@ void Statistics_OnExtraChipDetected(void)
     OLED_ShowString(0, 0, "[*] Extra Chip!", OLED_6X8);
     OLED_ShowString(0, 16, "Extra Chip", OLED_8X16);
     OLED_ShowString(0, 32, "Detected", OLED_8X16);
-    sprintf(str, "ADD: %lu", data->F_T_ADD);
+    sprintf(str, "ADD: %lu", data->Lead_Tail_ADD);
     OLED_ShowString(0, 48, str, OLED_8X16);
     OLED_Update();
 

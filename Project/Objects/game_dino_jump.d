@@ -37,3 +37,4 @@
 .\objects\game_dino_jump.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdarg.h
 .\objects\game_dino_jump.o: ..\Software\Delay\Delay.h
 .\objects\game_dino_jump.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\game_dino_jump.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stddef.h

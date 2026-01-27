@@ -32,6 +32,7 @@
 .\objects\menufunctions.o: ..\Hardware\Sensor\Sensor.h
 .\objects\menufunctions.o: ..\Software\Delay\Delay.h
 .\objects\menufunctions.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\menufunctions.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 .\objects\menufunctions.o: ..\Software\Statistics\Statistics.h
 .\objects\menufunctions.o: ..\Hardware\OLED\OLED.h
 .\objects\menufunctions.o: ..\Hardware\OLED\OLED_Data.h
@@ -45,9 +46,9 @@
 .\objects\menufunctions.o: ..\Hardware\USART\USART1.h
 .\objects\menufunctions.o: ..\Hardware\Buzzer\Buzzer.h
 .\objects\menufunctions.o: ..\Hardware\ESP8266\esp8266.h
+.\objects\menufunctions.o: ..\Hardware\DHT11\DHT11.h
 .\objects\menufunctions.o: ..\Software\ADC\ADC.h
 .\objects\menufunctions.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
-.\objects\menufunctions.o: ..\Hardware\DHT11\DHT11.h
 .\objects\menufunctions.o: ..\Software\Game\GAME_DINO_JUMP.h
 .\objects\menufunctions.o: ..\Software\Game\GAME_FLAPPYBIRD.h
 .\objects\menufunctions.o: ..\Software\Game\GAME_SNAKE.h

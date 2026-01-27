@@ -32,4 +32,5 @@
 .\objects\statistics.o: ..\Hardware\Sensor\Sensor.h
 .\objects\statistics.o: ..\Software\Delay\Delay.h
 .\objects\statistics.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\statistics.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 .\objects\statistics.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\math.h

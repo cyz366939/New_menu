@@ -582,9 +582,7 @@ void ESP8266_SendIntKeyValue(const char *key, int32_t value)
 void ESP8266_SendFloatKeyValue(const char *key, float value, int decimalPlaces)
 {
     char buffer[32];
-    char format[16];
-    snprintf(format, sizeof(format), "%s=%%.%df\r\n", key, decimalPlaces);
-    snprintf(buffer, sizeof(buffer), format, value);
+    snprintf(buffer, sizeof(buffer), "%s=%.*f\r\n", key, decimalPlaces, value);
     USART1_SendString(buffer);
 }
 
@@ -615,14 +613,43 @@ void ESP8266_UploadDataPoints(StatisticsData_t *statistics_struct)
     ESP8266_SendIntKeyValue("LOSS", statistics_struct->Middle_LOSS);
     Delay_ms(50);
 
-    ESP8266_SendIntKeyValue("ADD", statistics_struct->F_T_ADD);
+    ESP8266_SendIntKeyValue("ADD", statistics_struct->Lead_Tail_ADD);
     Delay_ms(50);
 
     // 步骤3: 发送浮点数数据
     ESP8266_SendFloatKeyValue("Yield", statistics_struct->yield_rate, 1); // 保留1位小数
-
+    Delay_ms(50);
     // 发送结束指令
     ESP8266_SendCommand("END");
+    Delay_ms(50);
+}
+
+/*
+ * 函    数：发送温湿度数据到ESP8266
+ * 参    数：无
+ * 返 回 值：无
+ */
+void ESP8266_SendDHT11Data(void)
+{
+    float temp=0, humi=0;
+
+    // 读取温湿度数据
+    if(DHT11_Read_Float(&temp, &humi)){
+    // 发送UPLOAD_DATA命令
+    ESP8266_SendCommand("UPLOAD_DATA");
+    Delay_ms(500);
+    // 发送温度数据
+    ESP8266_SendFloatKeyValue("DHT11_TEMP", temp, 1);
+    Delay_ms(50);
+    // 发送湿度数据
+    ESP8266_SendFloatKeyValue("DHT11_HUMI", humi, 1);
+    Delay_ms(50);
+    // 发送结束指令
+    ESP8266_SendCommand("END");
+    Delay_ms(50);
+
+    }
+
 }
 
 /*================接收ESP8266特定数据包数据=======================*/

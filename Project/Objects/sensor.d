@@ -31,4 +31,5 @@
 .\objects\sensor.o: ..\Libraries\STM32F10x_StdPeriph_Driver\inc\misc.h
 .\objects\sensor.o: ..\Software\Delay\Delay.h
 .\objects\sensor.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\sensor.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 .\objects\sensor.o: ..\Software\Statistics\Statistics.h

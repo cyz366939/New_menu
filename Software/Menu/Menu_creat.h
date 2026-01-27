@@ -7,7 +7,7 @@
 
 
 void Menu_Setup(void);
-
+uint8_t Menu_GetAutoUploadStatus(void); // 获取自动上传开关状态
 
 #endif
 

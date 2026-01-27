@@ -24,7 +24,7 @@ int main(void)
   Sensor_Init();             /*初始化传感器*/
   Buzzer_Init();             /*初始化蜂鸣器*/
   Statistics_Init();         /*初始化统计系统*/
-  ADC1_Init();               /*初始化ADC*/
+  //ADC1_Init();               /*初始化ADC*/
   CYZ_Receiver_Init(115200); /*初始化特定格式数据包接收器*/
   DHT11_Init();              /*初始化DHT11*/
   // System_startup();// 系统启动进度条
@@ -43,6 +43,10 @@ int main(void)
   DelayTimer time_sync_timer;
   Delay_Start(&time_sync_timer, 30000); // 30秒定时器
 
+  // 创建自动上传定时器（默认60秒自动上传一次）
+  DelayTimer auto_upload_timer;
+  Delay_Start(&auto_upload_timer, 60000); // 60秒定时器
+
   /*主循环*/
   while (1)
   {
@@ -59,17 +63,28 @@ int main(void)
     /*全局时间更新（每秒更新一次）*/
     if (Delay_Check(&time_update_timer))
     {
-      Time_Update();                   // 更新全局时间
-      Menu_Refresh();                  // 刷新菜单显示以更新状态栏时间
-      Delay_Reset(&time_update_timer); // 重置定时器
+      Time_Update();                         // 更新全局时间
+      Menu_Refresh();                        // 刷新菜单显示以更新状态栏时间
+      Delay_Start(&time_update_timer, 1000); // 重新开始定时器
     }
 
     /*时间同步（每30秒自动同步一次，非阻塞）*/
     if (Delay_Check(&time_sync_timer))
     {
       // ESP8266获取的已经是北京时间,所以不用再次转换时区
-      Time_SyncFromNetwork();        // 从网络同步时间（非阻塞，带异常处理）
-      Delay_Reset(&time_sync_timer); // 重置定时器
+      Time_SyncFromNetwork();               // 从网络同步时间（非阻塞，带异常处理）
+      Delay_Start(&time_sync_timer, 30000); // 重置定时器
+    }
+
+    /*自动上传数据（当自动上传开关开启时，每60秒自动上传一次）*/
+    if (Menu_GetAutoUploadStatus())
+    {
+      if (Delay_Check(&auto_upload_timer))
+      {
+        ESP8266_UploadDataPoints(&g_statistics); // 上传统计数据
+        ESP8266_SendDHT11Data();                 // 上传温湿度数据
+        Delay_Start(&auto_upload_timer, 60000);  // 重置60秒定时器
+      }
     }
   }
 }

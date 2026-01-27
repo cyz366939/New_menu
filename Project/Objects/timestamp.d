@@ -38,3 +38,4 @@
 .\objects\timestamp.o: ..\Hardware\OLED\OLED_Data.h
 .\objects\timestamp.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\math.h
 .\objects\timestamp.o: ..\Software\Delay\delay.h
+.\objects\timestamp.o: D:\keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
